@@ -1,0 +1,3383 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Cross compile Trinity Desktop Environment [TDE] for the Raspberry Pi3</title>
+
+<!-- page -->
+<style>
+body {font:13px sans;max-width: 1000px;padding:0px 10px;margin: 0 auto; /* center page */} 
+.red {background-color: #FFdddd;}
+.gray {background-color: #e7e7e7;}
+.green {background-color: #FFD7F7;}
+.thtwo {background-color: #Fafafa;border: dotted 1px;}
+.thtwob {border: dotted 1px;}
+.central {border: dashed 1px;display: inline-block;padding: 2px;}
+.appx {background-color: #Fafafa;}
+.console {border-left: 3px solid lightgrey;margin-left: 15px;}
+.dastx {color: #978DFF;}
+.comment {color: #acacac;}
+.off_rel  {color: magenta;}
+div {padding: 5px;white-space: pre-wrap;}
+code {font-size:12px;padding: 5px;display: inline-block;white-space: pre-wrap;margin: 5px 0;}
+pre {font-size:12px;}
+div code {margin: 10px 0;}
+a, a:visited {text-decoration: none;font-style: oblique;color: #0000c5;}
+a.extlink, a:visited.extlink {color: #c50000;}
+a.intlink, a:visited.intlink {color: #00c500;}
+hr {width: 100%;height: 2px;}
+</style>
+
+<!-- pop-up buttons -->
+<style type="text/css">
+.b_locn {border-left: 10px solid #FFdddd;padding-left: 10px;}
+.b_prefs {border-left: 10px solid #FFD7F7;padding-left: 10px;}
+.b_32bit {border-left: 10px solid #Fafafa;padding-left: 10px;}
+
+/* basic for close tab */
+span.tabs a {box-shadow:1px 1px 3px gray; /* shift-horz|-vert|width|colour */
+border-radius:6px;padding: 2px 4px;color:#0000c5;}
+span.tabs.locn a {background-color:#FFdddd;}
+span.tabs.prefs a {background-color:#FFD7F7;}
+span.tabs.th2 a {background-color:#Fafafa;}
+span.tabs.reqd a {background-color:#E5F1FF;}
+span.tabs.opt a {background-color:#FFD7F7;}
+
+div.tab {display: none;}
+div.tab:target {display: block;}
+:target div.tab {display: block;}
+:target div.tab + div.tab {display: none;}
+</style>
+
+<!-- nav box
+Thanks to http://www.websitecodetutorials.com/code/css-nav-menus/css3-mega-drop-down-menu.php  -->
+<style type="text/css">
+#menu {
+list-style:none;
+font-weight:bold;
+/* font-size: .85em;*/
+}
+
+#menu li {
+position:fixed;
+top:20;right:10;
+background:none;
+padding:5px 9px 0px 9px;
+border:1px solid #e3e3e3;
+border-radius:6px;
+text-align:center;
+z-index:1;
+}
+
+#menu a {display:block;}
+
+/* ----------- Hide/Show Div ---------- */
+#menu div {
+position:fixed;
+top:20;right:10;bottom:10;
+max-height: 360px;
+ overflow-y: auto;
+ white-space: nowrap;
+z-index:4;
+border:1px solid #000;
+font:14px;
+font-weight:normal;
+text-align:left; 
+box-shadow:0 2px 8px #000;
+border-radius:6px;
+    -moz-transition: all .2s ease-in-out;
+ -webkit-transition: all .2s ease-in-out;
+      -o-transition: all .2s ease-in-out;
+     -ms-transition: all .2s ease-in-out;
+         transition: all .2s ease-in-out;
+visibility:hidden;
+opacity:0;
+}
+
+/* ---- CSS3 Transform Fade In/Out ----- */
+#menu li:hover div {
+visibility:visible;
+background:#fff;
+opacity:1;
+}
+
+#menu div p {padding-right:20px;}
+
+#menu div p a {
+color:darkblue;
+text-decoration:none;
+clear:left;
+line-height:1.1;
+}
+
+#menu div a:hover, #menu div a:focus, #menu div a:active {
+text-decoration:none;
+color:darkred;
+}
+
+/* print styling - no nav box */
+@media print {#menu { display: none;} body, p, a {color:#000; background:#fff;}}
+</style>
+
+
+</head><body>
+<br>
+<h3> Cross compile Trinity Desktop Environment [TDE] for the Raspberry Pi3 </h3>
+<p>
+This is based on the <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds build scripts</a> which are used for a native RPi3 build.
+<br>
+It's assumed the RPi3 is running a system based on the <a class="extlink" href="http://sarpi.co.uk">SARPi kernel</a> and Slackware arm hard float.
+<br>
+To date, the packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
+<p>
+Why cross-compile?
+<p>
+Of the methods available for compiling TDE for the RPi3, I've tried three:
+<br>1] natively on the Pi itself
+<br>2] in an arm chroot on a x86_64 machine
+<br>3] cross compiling on a x86_64 machine using qemu/binfmt to run most of the TDE binaries required for the build
+<p>
+All methods work, but usually speed of compilation is the determining factor for which to choose.
+<p>
+Compared to a native x86_64 build on my T500, the build times are typically:
+<br>1] x3+
+<br>2] x10 - all binaries used here have to run through qemu
+<br>3] +25% typically - using a mix of x86_64 and arm binaries, the use of qemu can be minimized.
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For example, tqmoc is used extensively and as it builds arch independent output, the x86_64 version can be used.
+<p>
+The build order is:
+<br>1] Build the cross compiler with <span class="green">optional</span> packaging
+<br>2] Build qemu
+<br>3] Set up the build environment with tqmoc and meinproc x86 binaries
+<br>4] Build the <span style="background: #E5F1FF;">required</span> TDE packages and install them to / and sysroot
+<br>5] Build other TDE packages
+<p>
+<span class="thtwo">To aid trouble shooting, this page has been set up so that each build can be run by selecting the contents in part or whole and pasting into a console.</span>
+<p>
+<b>TDE build environment</b><br>
+This will be the eventual build setup for the cross-compiler and sysroot.<br>
+The intention is that as much as possible that is required for the TDE cross compilation is contained within one directory and can be installed/mounted only when required.<br>
+* Only TDE packages required for building other TDE apps will be installed.<br>
+** sysroot can be a permanent setup within the cross-compiler tree or bind mounted to another media or directory.
+
+<pre>/opt
+├── cross-pi-gcc
+│   ├── arm-linux-gnueabihf
+│   │   ├── bin
+│   │   │   └── <span class="comment">ldd &hellip;</span>
+│   │   └── lib
+│   │       └── <span class="comment">ld-linux-armhf.so.3 &hellip;</span>
+│   ├── bin				cross compiler
+│   │   └── <span class="comment">arm-linux-gnueabihf-gcc &hellip;</span>
+│   └── sysroot				**
+│       ├── lib				host libraries
+│       ├── usr
+│       │   ├── include			host headers
+│       │   │   └── linux		kernel headers
+│       │   └── lib			host libraries
+│       ├── src				source archives
+│       ├── x86				x86 binaries - qemu-arm, meinproc, tqmoc
+│       └── opt
+│           └── trinity			for TDE headers and libraries for pkg-config *
+└── trinity				for TDE executables used during TDE builds *</pre>
+<p>
+<b>Build in a chroot?</b><br>
+Yes if:<br>
+&blacktriangleright; the TDE installation directory exists on the build system,<br>
+&blacktriangleright; any of the packages being built exist on the build system,<br>
+because they will be overwritten with arm versions.<p>
+<b>Set up</b>
+<br>
+<!--
+gcc_x - start
+-->
+<a name="close_gcc_x"></a>
+<p>
+<span class="tabs"><a href="#gcc_x">&hellip; build gcc cross-compiler</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Based on - <a class="extlink" href="https://solarianprogrammer.com/2018/05/06/building-gcc-cross-compiler-raspberry-pi/">Building GCC as a cross compiler for Raspberry Pi.</a></span>
+<div id="gcc_x" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_gcc_x">close</a></span>
+
+The cross compiler is built in this tree:
+<code>/tmp
+└── xgcc
+    ├── gcc-8			sources for a gcc-8.2.0/glibc-2.28 build
+    │   ├── binutils-2.31.1.tar.bz2
+    │   ├── gcc-8.2.0.tar.gz
+    │   ├── glibc-2.28.tar.bz2
+    │   ├── gmp-6.1.2.tar.xz
+    │   ├── isl-0.18.tar.bz2
+    │   ├── mpc-1.1.0.tar.gz
+    │   └── mpfr-4.0.1.tar.xz
+    ├── build_all		build area
+    │   ├── linux		kernel headers
+    │   ├── binutils-2.31.1
+    │   ├── build-binutils
+    │   ├── gcc-8.2.0
+    │   ├── build-gcc
+    │   ├── glibc-2.28
+    │   └── build-glibc
+    └── <span class="green">pkg			DESTDIR for creating package</span>
+<code class="thtwo">mkdir -p /tmp/xgcc/{gcc-8,build_all}
+cd /tmp/xgcc/gcc-8
+</code>
+<span class="dastx">##</span> Get required sources
+<code class="thtwo"><span style="color: #c50000;">wget https://ftpmirror.gnu.org/binutils/binutils-2.31.1.tar.bz2
+wget https://ftpmirror.gnu.org/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
+wget https://ftpmirror.gnu.org/glibc/glibc-2.28.tar.bz2
+wget https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz
+wget https://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2
+wget https://ftpmirror.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+wget https://ftpmirror.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.xz</span>
+</code>
+<span class="dastx">##</span> <b>Install the kernel headers</b>
+<span class="dastx">##</span> SARPi don't provide a headers package for their kernel which is built on the 'Raspberry Pi Foundation GitHub repository sources'.
+<span class="dastx">##</span> Download the kernel source and create a headers package.
+<span class="dastx">##</span> This will probably be a later version than the SARPi kernel, but according to the <a class="extlink" href="https://sourceware.org/glibc/wiki/FAQ#What_version_of_the_Linux_kernel_headers_should_be_used.3F">Glibc Wiki FAQ</a>, that's OK
+<span class="dastx">##</span> This is a 180MB download
+<code class="thtwo">cd ../build_all
+<span style="color: #c50000;">git clone --depth=1 https://github.com/raspberrypi/linux</span>
+cd linux
+make headers_install ARCH=arm INSTALL_HDR_PATH=/tmp/headers/usr
+K_VER=$(make kernelversion)
+(cd /tmp/headers
+makepkg -l y -c n /tmp/kernel-headers-$K_VER-RPi3.txz)
+rm -rf /tmp/headers
+cd ..
+rm -rf linux
+
+ROOT=/opt/cross-pi-gcc/sysroot installpkg /tmp/kernel-headers-$K_VER-RPi3.txz
+</code>
+<span class="dastx">##</span> Extract the archives
+<code class="thtwo">tar xf ../gcc-8/binutils-2.31.1.tar.bz2
+tar xf ../gcc-8/glibc-2.28.tar.bz2
+tar xf ../gcc-8/gcc-8.2.0.tar.gz
+cd gcc-8.2.0
+ln -s ../../gcc-8/gmp-6.1.2.tar.xz .
+ln -s ../../gcc-8/mpc-1.1.0.tar.gz .
+ln -s ../../gcc-8/mpfr-4.0.1.tar.xz .
+ln -s ../../gcc-8/isl-0.18.tar.bz2 .
+<span class="dastx">##</span> Update the prerequisites versions
+sed -i 's|6.1.0.tar.bz2|6.1.2.tar.xz|;s|mpfr-3.1.4.tar.bz2|mpfr-4.0.1.tar.xz|;s|0.16.1|0.18|;s|1.0.3|1.1.0|' contrib/download_prerequisites
+<span class="dastx">##</span> Set up the gcc build environment
+contrib/download_prerequisites --no-verify
+</code>
+<span class="dastx">##</span> Set options for RPi3
+<code class="thtwo">export ARCH="armv8-a+crc"
+export FPU="neon-fp-armv8"
+export TUNE="cortex-a53"
+export FLOAT="hard"
+</code>
+<span class="dastx">##</span> <b>Build Binutils</b>
+<code class="thtwo">mkdir ../build-binutils
+cd ../build-binutils
+../binutils-2.31.1/configure --prefix=/opt/cross-pi-gcc --with-sysroot=/opt/cross-pi-gcc/sysroot --target=arm-linux-gnueabihf --with-arch=$ARCH --with-tune=$TUNE --with-fpu=$FPU --with-float=$FLOAT --disable-multilib
+make -j4
+<span class="dastx">##</span> install to '--prefix' for this build
+make install-strip
+<span class="green"><span class="dastx">##</span> install for packaging
+DESTDIR=/tmp/xgcc/pkg make install-strip</span>
+
+rm -rf /tmp/xgcc/build_all/binutils-2.31.1
+rm -rf /tmp/xgcc/build_all/build-binutils
+</code>
+<span class="dastx">##</span> <b>Start building gcc</b>
+<span class="dastx">##</span> gcc is going to be built specifically for the RPi3 using arch/tune/fpu/float options
+<code class="thtwo">mkdir ../build-gcc
+cd ../build-gcc
+../gcc-8.2.0/configure --prefix=/opt/cross-pi-gcc --with-sysroot=/opt/cross-pi-gcc/sysroot --target=arm-linux-gnueabihf --enable-languages=c,c++ --with-arch=$ARCH --with-tune=$TUNE --with-fpu=$FPU --with-float=$FLOAT --disable-multilib
+make -j4 all-gcc
+make install-gcc
+</code>
+<span class="dastx">##</span> <b>Add the cross compiler folder to the path</b> for building glibc
+<span class="dastx">##</span> Prevents "__INT64_C" redefined and "__ARM_ARCH" is not defined errors.
+<span class="dastx">##</span> It also contains arm-linux-gnueabihf-strip which is used to strip the glibc executables and libs.
+<code class="thtwo">export PATH=/opt/cross-pi-gcc/bin:$PATH
+</code>
+<span class="dastx">##</span> <b>Start building glibc</b>
+<code class="thtwo">mkdir ../build-glibc
+cd ../build-glibc
+<span class="dastx">##</span> shouldn't need --target= here because target=host unless set otherwise - in theory!!
+../glibc-2.28/configure --prefix=/opt/cross-pi-gcc/arm-linux-gnueabihf --with-sysroot=/opt/cross-pi-gcc/sysroot --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf --with-arch=$ARCH --with-tune=$TUNE --with-fpu=$FPU --with-float=$FLOAT --disable-multilib libc_cv_forced_unwind=yes
+make install-bootstrap-headers=yes install-headers
+make -j4 csu/subdir_lib
+install csu/crt1.o csu/crti.o csu/crtn.o /opt/cross-pi-gcc/arm-linux-gnueabihf/lib
+arm-linux-gnueabihf-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o /opt/cross-pi-gcc/arm-linux-gnueabihf/lib/libc.so
+touch /opt/cross-pi-gcc/arm-linux-gnueabihf/include/gnu/stubs.h
+</code>
+<span class="dastx">##</span> <b>Back to gcc</b>
+<code class="thtwo">cd ../build-gcc
+make -j4 all-target-libgcc
+make install-target-libgcc
+</code>
+<span class="dastx">##</span> <b>Finish building glibc</b>
+<code class="thtwo">cd ../build-glibc
+make -j4
+<span class="dastx">##</span> no strip option to 'make install'
+make install
+<span class="green"><span class="dastx">##</span> install to different DESTDIR for stripping
+DESTDIR=/tmp/xgcc/pkg-2 make install
+find /tmp/xgcc/pkg-2 | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs arm-linux-gnueabihf-strip --strip-debug
+find /tmp/xgcc/pkg-2 | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs arm-linux-gnueabihf-strip --strip-debug</span>
+</code>
+<span class="dastx">##</span> <b>Finish building gcc</b>
+<code class="thtwo">cd ../build-gcc
+make -j4
+make install-strip
+<span class="green">DESTDIR=/tmp/xgcc/pkg make install-strip</span>
+</code>
+<span class="dastx">##</span> <b>Create cross compiler package</b>
+<code class="green"><span class="dastx">##</span> Copy stripped glibc to xgcc
+<code class="thtwo">cp -a /tmp/xgcc/pkg-2/* /tmp/xgcc/pkg/
+</code>
+<span class="dastx">##</span> Create a sysroot directory
+<code class="thtwo">mkdir /tmp/xgcc/pkg/opt/cross-pi-gcc/sysroot
+</code>
+<span class="dastx">##</span> Remove unwanted locales
+<code class="thtwo">rm -rf /tmp/xgcc/pkg/opt/cross-pi-gcc/share/locale
+mv /tmp/xgcc/pkg/opt/cross-pi-gcc/arm-linux-gnueabihf/share/i18n/locales/en_{GB,US} /tmp
+rm -rf /tmp/xgcc/pkg/opt/cross-pi-gcc/arm-linux-gnueabihf/share/i18n/locales/*
+mv /tmp/en_{GB,US} /tmp/xgcc/pkg/opt/cross-pi-gcc/arm-linux-gnueabihf/share/i18n/locales/
+
+mv /tmp/xgcc/pkg/opt/cross-pi-gcc/arm-linux-gnueabihf/share/locale/{en_GB,locale.alias} /tmp
+rm -rf /tmp/xgcc/pkg/opt/cross-pi-gcc/arm-linux-gnueabihf/share/locale/*
+mv /tmp/{en_GB,locale.alias} /tmp/xgcc/pkg/opt/cross-pi-gcc/arm-linux-gnueabihf/share/locale/
+</code>
+<span class="dastx">##</span> Create the package
+<code class="thtwo">cd /tmp/xgcc/pkg
+[[ $FLOAT == hard ]] &amp;&amp; float=h
+ARCH=$(echo $ARCH | colrm 6)
+makepkg -l y -c n /tmp/xgcc820-glibc2.28-${K_VER}_RPi_headers-en_GB-${ARCH}_${float:-s}f.txz
+</code>
+</code>
+<span class="dastx">##</span> Remove the build area
+<code class="thtwo">cd /
+rm -rf /tmp/xgcc
+</code></code>
+<span class="tabs"><a href="#close_gcc_x">close</a></span>
+</div>
+<br></div>
+<!--
+gcc_x - end
+-->
+<p>
+<!--
+qemu - start
+-->
+<a name="close_qemu"></a>
+<br>
+<span class="tabs"><a href="#qemu">&hellip; build qemu</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Required to run arm binaries used during the cross compilation - for example tquic and tde-config.
+</span>
+<div id="qemu" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_qemu">close</a></span>
+
+<b>Build</b>
+<code><code class="thtwo">cd /tmp
+</code>
+<code class="thtwo"><span style="color: #c50000;">wget https://download.qemu.org/qemu-2.12.1.tar.xz</span>
+</code>
+<code class="thtwo">tar xf qemu-2.12.1.tar.xz
+cd qemu-2.12.1/
+mkdir build
+cd build
+</code>
+<span class="dastx">##</span> Only the one target is needed for the LSB binaries required for the RPi3, and most other options are not required for this particular use.
+<span class="dastx">##</span> There is no need to build qemu-static because qemu will be built and run within this environment.
+<code class="thtwo">export PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
+
+../configure \
+--target-list="arm-linux-user" \
+--audio-drv-list= \
+--disable-blobs \
+--disable-bluez \
+--disable-brlapi \
+--disable-bsd-user \
+--disable-bzip2 \
+--disable-cap-ng \
+--disable-capstone \
+--disable-crypto-afalg \
+--disable-curl \
+--disable-curses \
+--disable-debug-info \
+--disable-debug-tcg \
+--disable-docs \
+--disable-fdt \
+--disable-gcrypt \
+--disable-glusterfs \
+--disable-gnutls \
+--disable-gtk \
+--disable-guest-agent \
+--disable-hax \
+--disable-hvf \
+--disable-jemalloc \
+--disable-kvm \
+--disable-libiscsi \
+--disable-libnfs \
+--disable-libssh2 \
+--disable-libusb \
+--disable-libxml2 \
+--disable-linux-aio \
+--disable-lzo \
+--disable-malloc-trim \
+--disable-modules \
+--disable-netmap \
+--disable-nettle \
+--disable-numa \
+--disable-opengl \
+--disable-qom-cast-debug \
+--disable-rbd \
+--disable-rdma \
+--disable-replication \
+--disable-sanitizers \
+--disable-seccomp \
+--disable-sdl \
+--disable-slirp \
+--disable-smartcard \
+--disable-snappy \
+--disable-sparse \
+--disable-spice \
+--disable-system \
+--disable-tcg-interpreter \
+--disable-tcmalloc \
+--disable-tools \
+--disable-tpm \
+--disable-usb-redir \
+--disable-vde \
+--disable-vhost-crypto \
+--disable-vhost-net \
+--disable-vhost-scsi \
+--disable-vhost-user \
+--disable-vhost-vsock \
+--disable-virglrenderer \
+--disable-virtfs \
+--disable-vte \
+--disable-vnc \
+--disable-vxhs \
+--disable-xen \
+--disable-xfsctl
+</code>
+<code class="thtwo">make -j6
+make install DESTDIR=/tmp/qemu-temp
+</code></code>
+qemu-arm will be copied to sysroot in the next section &hellip;
+
+<span class="tabs"><a href="#close_qemu">close</a></span>
+</div>
+<br></div>
+<!--
+qemu - end
+-->
+
+
+<p>
+<!--
+Set_variables - start
+-->
+<a name="close_Set_variables"></a>
+<br>
+<span class="tabs"><a href="#Set_variables">&hellip; the build environment</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Set the shell variables and install the required arm headers and libraries in SYSROOT.</span>
+<div id="Set_variables" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_Set_variables">close</a></span>
+<code><b>Install the cross-compiler</b>
+<code class="green"><code class="thtwo">rm -rf /opt/cross-pi-gcc
+installpkg /tmp/xgcc820-glibc2.28-${K_VER}_RPi_headers-en_GB-${ARCH}_${float:-s}f.txz
+</code></code>
+<span class="dastx">##</span> <b>Set variables</b>
+<code class="thtwo"><span class="dastx">##</span> this is where the x-compiler package has been built to install to
+<b>XGCC_DIR</b>=/opt/cross-pi-gcc
+<span class="dastx">##</span> this is where the sysroot has been set in the x-compiler tree
+<b>SYSROOT</b>=$XGCC_DIR/sysroot
+</code>
+<span class="dastx">##</span> The arm libs and headers needed for cross compiling need to be installed in SYSROOT.
+<span class="dastx">##</span> They can be [1] directly installed to $SYSROOT if the cross compiler is to be a permanent addition to the system, otherwise [2] installed to a directory [<span class="comment">/path_to_arm_current_sysroot_directory</span>] on a storage medium through bind-mounting it to $SYSROOT for the actual build process:
+<code class="green"><span class="dastx">##</span> [2]:
+<code class="thtwo">mkdir -p <span class="comment">/path_to_arm_current_sysroot_directory</span>
+mount -B <span class="comment">/path_to_arm_current_sysroot_directory</span> $SYSROOT
+</code></code>
+<span class="dastx">##</span> Create a source directory and place or sym-link all the source archives there
+<code class="thtwo">mkdir -p $SYSROOT/src
+</code>
+<span class="dastx">##</span> only need qemu-arm - just place it somewhere the kernel can find it
+<code class="thtwo">mkdir -p $SYSROOT/x86
+cp /tmp/qemu-temp/usr/local/bin/qemu-arm $SYSROOT/x86
+rm -rf /tmp/qemu*
+</code>
+<span class="dastx">##</span> <b>Load the arm interpreter</b>
+<code class="thtwo">modprobe binfmt_misc
+mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc
+echo ":arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:$SYSROOT/x86/qemu-arm:" > /proc/sys/fs/binfmt_misc/register
+</code>
+<span class="dastx">##</span> enable ld-linux-armhf.so.3 to be found
+<code class="thtwo">export QEMU_LD_PREFIX=$SYSROOT
+</code>
+<span class="dastx">##</span> Install all packages needed to build the required TDE packages.
+<span class="dastx">##</span> SYSROOT is not a functioning system, it's just a repository for arm libs and headers required for cross compiling.
+<code class="thtwo">(
+<span class="dastx">##</span> get ldconfig out of the way - links will be set up by doinst.sh
+mv /sbin/ldconfig /sbin/ldconfig-bak
+<span class="dastx">##</span> Slack_base = where the Slackware packages a-y directories are:
+<b>Slack_base</b>=<span class="comment">/path_to_Slackware_arm_current</span>
+export ROOT=$SYSROOT
+cd $Slack_base
+installpkg /tmp/kernel-headers-*-RPi3.txz
+installpkg l/glibc-2.28-*.txz
+installpkg */dbus-*.txz
+installpkg a/eudev-*.txz
+installpkg x/fontconfig-*.txz
+installpkg l/freetype-*.txz
+installpkg x/libICE-*.txz
+installpkg x/libSM-*.txz
+installpkg x/libX11-*.txz
+installpkg x/libXcomposite-*.txz
+installpkg x/libXcursor-*.txz
+installpkg x/libXext-*.txz
+installpkg x/libXft-*.txz
+installpkg x/libXi-*.txz
+installpkg x/libXinerama-*.txz
+installpkg x/libXmu-*.txz
+installpkg x/libXrandr-*.txz
+installpkg x/libXrender-*.txz
+installpkg l/libjpeg-turbo-*.txz
+installpkg l/libmng-*.txz
+installpkg l/libpng-*.txz
+installpkg x/mesa-*.txz
+installpkg a/util-linux-*.txz
+installpkg l/zlib-*.txz
+installpkg l/harfbuzz-*.txz
+installpkg l/lcms2-*.txz
+installpkg x/libXau-*.txz
+installpkg x/libXdamage-*.txz
+installpkg x/libXdmcp-*.txz
+installpkg x/libXfixes-*.txz
+installpkg x/libXt-*.txz
+installpkg x/libXxf86vm-*.txz
+installpkg x/libdrm-*.txz
+installpkg x/libxcb-*.txz
+installpkg x/libxshmfence-*.txz
+installpkg x/glu-*.txz
+installpkg x/libXi-*.txz
+installpkg l/libidn2-*.txz
+installpkg ap/cups-*.txz
+installpkg l/libxml2-*.txz
+installpkg l/libxslt-*.txz
+installpkg a/file-*.txz
+installpkg l/taglib-1*.txz
+installpkg ap/cdparanoia-*.txz
+installpkg l/audiofile-*.txz
+installpkg l/alsa-lib-*.txz
+installpkg l/glib2-*.txz
+installpkg l/pcre-*.txz
+installpkg ap/flac-*.txz
+installpkg l/libogg-*.txz
+installpkg l/libvorbis-*.txz
+installpkg l/libmad-*.txz
+installpkg n/openssl-*.txz
+installpkg a/bzip2-*.txz
+installpkg a/xz-*.txz
+installpkg l/openexr-*.txz
+installpkg l/ilmbase-*.txz
+installpkg l/expat-*.txz
+installpkg x/libXcomposite-*.txz
+installpkg n/gnutls-*.txz
+installpkg n/p11-kit-*.txz
+installpkg l/libunistring-*.txz
+installpkg n/nettle-*.txz
+installpkg l/libffi-*.txz
+installpkg n/NetworkManager-*.txz
+installpkg a/acl-*.txz
+installpkg a/attr-*.txz
+installpkg x/libpthread-stubs-*.txz
+installpkg n/libtirpc-*.txz
+installpkg x/libfontenc-*.txz
+installpkg x/libXinerama-*.txz
+installpkg x/libXdamage-*.txz
+installpkg x/libXtst-*.txz
+installpkg n/htdig-*.txz
+installpkg x/libxkbfile-*.txz
+installpkg x/xorgproto-*.txz
+<span class="dastx">##</span> + for tdeutils
+installpkg l/gmp-*.txz
+installpkg d/python-*.txz
+<span class="dastx">##</span> + for imlib
+installpkg l/libtiff-*.txz
+installpkg l/giflib-*.txz
+<span class="dastx">##</span> + for tdegraphics
+installpkg l/poppler-*.txz
+<span class="dastx">##</span> remove .la files and any links to them - they can cause a problem because the paths are hard-coded to /usr/... and so pick up the build libs rather than the host libs in SYSROOT
+find $SYSROOT/usr/lib -type l -name \*.la -exec rename .la .la-bak {} \;
+find $SYSROOT/usr/lib -type f -name \*.la -exec rename .la .la-bak {} \;
+<span class="dastx">##</span> restore ldconfig
+mv /sbin/ldconfig-bak /sbin/ldconfig
+)
+</code>
+<span class="dastx">##</span> From the cross compiler, add any additional libs that might be needed
+<code class="thtwo">(cd $SYSROOT/lib
+ln -s $XGCC_DIR/arm-linux-gnueabihf/lib/*.so* .)
+</code>
+<span class="dastx">##</span> Set the PATH for this shell
+<code class="thtwo"><span class="dastx">##</span> Add $XGCC_DIR/bin for arm-linux-gnueabihf-gcc etc; $XGCC_DIR/arm-linux-gnueabihf/bin for strip etc.
+export PATH=$XGCC_DIR/bin:$XGCC_DIR/arm-linux-gnueabihf/bin:/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
+</code>
+<span class="dastx">##</span> Set the variables for the TDE packages builds
+<code class="thtwo">export SLKLDFLAGS=""
+export SLKCFLAGS=-O2
+export INSTALL_TDE="/opt/trinity"
+export COMPILER="arm-linux-gnueabihf-gcc"
+export COMPILER_CXX="arm-linux-gnueabihf-g++"
+export CC=$COMPILER \
+export CXX=$COMPILER_CXX \
+export HOST=arm-linux-gnueabihf
+export LIBDIRSUFFIX=""
+export TQTDIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3
+export NUMJOBS=-j6
+export SYS_CNF_DIR="/etc/trinity"
+export TDE_VERSION=R14.0.5
+export BUILD=1
+export I18N=en_GB
+</code>
+<span class="dastx">##</span> <b>Set up pkg-config</b> to prefix -I and -L paths in *.pc files with $SYSROOT.
+<span class="dastx">##</span> This works where the host libs and headers <b>are</b> in $SYSROOT &hellip;
+<span class="dastx">##</span> But TDE doesn't install to SYSROOT, its .pc files might be in, say, /opt/trinity/lib/pkgconfig, and pkg-config will prefix the -I and -L paths with $SYSROOT - with the result that TDE includes and libs can't be found.
+<span class="dastx">##</span> If INSTALL_TDE=/usr, TDE would also have to be *installed* to SYSROOT - linking wouldn't work because that would pull the build system libs and headers into SYSROOT, as would bind mounting it.
+<span class="dastx">##</span> So my work-around for this is to install TDE to both / and $SYSROOT so that the TDE binaries will be found in $INSTALL_TDE and pkg-config prefixed paths will locate the headers and libs in $SYSROOT$INSTALL_TDE.
+<code class="thtwo">export PKG_CONFIG_PATH=
+export PKG_CONFIG_SYSROOT_DIR=$SYSROOT
+export PKG_CONFIG_LIBDIR=$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig:$SYSROOT$INSTALL_TDE/lib/pkgconfig
+</code>
+<span class="dastx">##</span> <b>Functions</b> - common to each build
+<code class="thtwo">untar_fn ()
+{
+cd $TMP/tmp-$PRGNAM
+tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.bz2
+cd ${SUB_DIR:-}$PRGNAM
+}
+
+chown_fn ()
+{
+chown -R root:root .
+chmod -R u+w,go+r-w,a+rX-st .
+}
+
+cd_builddir_fn()
+{
+mkdir -p build-${PRGNAM}
+cd build-${PRGNAM}
+}
+
+strip_fn ()
+{
+find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+}
+
+mkdir_install_fn ()
+{
+mkdir -p $PKG/install
+}
+
+makepkg_fn ()
+{
+cd $PKG
+makepkg --linkadd y --chown n $OUTPUT/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+}
+
+ltoolupdate_fn ()
+{
+<span class="dastx">##</span> look in SYSROOT for headers and libs
+sed -i "s|/usr/include|$SYSROOT&amp;|g" admin/acinclude.m4.in
+sed -i "s|/usr/lib|$SYSROOT&amp;|g" admin/acinclude.m4.in
+<span class="dastx">##</span> correct the variable name in error message
+sed -i "s|variable UIC to|variable UIC_PATH to|" admin/acinclude.m4.in
+
+cp /$(grep -h ltmain.sh /var/log/packages/libtool*) admin/
+cp /$(grep -h libtool.m4 /var/log/packages/libtool*) admin/libtool.m4.in
+cp /$(grep -h missing /var/log/packages/libtool*) admin/
+
+make -f admin/Makefile.common
+}
+
+FindTQt-patch_fn ()
+{
+<span class="dastx">##</span> allow tqmoc path to be pre-defined
+echo $'--- cmake/modules/FindTQt.cmake
++++ cmake/modules/FindTQt.cmake
+@@ -34,0 +35 @@
++if( NOT DEFINED MOC_EXECUTABLE )
+@@ -38 +39 @@
+-
++endif( NOT DEFINED MOC_EXECUTABLE )' | while read line
+do
+patch -p0
+done
+}
+
+cmake-toolchain_fn ()
+{
+echo "  set(CMAKE_SYSTEM_NAME Linux)
+  set(CMAKE_SYSTEM_PROCESSOR arm)
+  set(CMAKE_SYSROOT $SYSROOT)
+<span class="dastx">##</span> maybe try this later
+<span class="dastx">##</span>  set(CMAKE_CROSSCOMPILING_EMULATOR $XGCC_DIR/bin/arm-linux-gnueabihf-gcc)
+<span class="dastx">##</span> these don't seem to have any affect:
+  set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH $SYSROOT)
+  set(CMAKE_FIND_ROOT_PATH $SYSROOT)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+" > cmake-toolchain.cmake
+}
+</code></code>
+<span class="tabs"><a href="#close_Set_variables">close</a></span>
+</div>
+<br></div>
+<!--
+Set_variables - end
+-->
+
+<p>
+<!--
+M_proc - start
+-->
+<a name="close_M_proc"></a>
+<br>
+<span class="tabs"><a href="#M_proc">&hellip; tqmoc and meinproc x86 binaries</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;The cross compiling build time can be reduced by using x86 versions of tqmoc and meinproc which produce ARCH independent ouput. The figures for the tdebase build demonstrate how much quicker a build can be.</span>
+<div id="M_proc" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_M_proc">close</a></span>
+
+<b>tqmoc</b> is taken from a pre-built tqt3 x86 package.
+
+<b>meinproc</b> with its associated x86 TDE libs is set up from pre-built x86 packages.
+<code>Variables for pre-built x86 packages
+<code class="thtwo">INSTALL_TDE_x86="/opt/tde"
+LIBDIRSUFFIX_x86="64"
+</code>
+<span class="dastx">##</span> Install x86 packages to temporary location on BUILD system
+<code class="thtwo">(cd <span class="comment">/location_of_packages</span>
+ROOT=/tmp/x86/ installpkg tqt3-R14.0.5-x86_64-*.txz tqtinterface-R14.0.5-x86_64-*.txz dbus-1-tqt-R14.0.5-x86_64-*.txz tdelibs-R14.0.5-x86_64-*.txz libart_lgpl-R14.0.5-x86_64-*.txz)
+</code>
+<span class="dastx">##</span> Copy tqmoc, and meinproc and its dependent libraries, to a convenient location, $SYSROOT/x86
+<code class="thtwo">(cd $SYSROOT/x86
+cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-R14.0.5/bin/tqmoc .
+cp -a /tmp/x86$INSTALL_TDE_x86/bin/meinproc .
+cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/lib{DCOP,dbus-1-tqt,tde{core,fx,io,su,ui,walletclient}}.so* .
+cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-R14.0.5/lib/libtqt-mt.so* .
+cp -a /tmp/x86/usr/lib$LIBDIRSUFFIX_x86/lib{tqt,art_lgpl_2}.so* .
+)
+rm -rf /tmp/x86*
+</code>
+<span class="dastx">##</span> Add an RPATH so meinproc will use these libraries
+<code class="thtwo">patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/meinproc
+patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/libtdecore.so.14.0.0
+</code></code>
+<span class="tabs"><a href="#close_M_proc">close</a></span>
+</div>
+<br></div>
+<!--
+M_proc - end
+-->
+
+<br>
+<b>Builds</b>
+<br>
+<!--
+tqt - start
+-->
+<a name="close_tqt"></a>
+<br>
+<span class="tabs reqd"><a href="#tqt">&hellip; tqt3</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;
+</a></span>
+<div id="tqt" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tqt">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=tqt3
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+PREPEND=no
+
+SUB_DIR=dependencies/
+untar_fn
+</code>
+
+<span class="dastx">##</span> <b>Build everything=arm for RPi3 installation</b>
+<code class="green"><span class="dastx">##</span> Remove some stuff that's not needed for TDE build and run-time support
+
+<span class="dastx">##</span> html docs occupy ~21M
+<code class="thtwo">sed -i '/htmldocs/d' src/qt_install.pri
+sed -i '/translations/d' src/qt_install.pri
+sed -i '/assistanttranslations/d' tools/assistant/assistant.pro
+sed -i '/phrasebooks/d' tools/linguist/linguist/linguist.pro
+sed -i '/templates/d' tools/designer/designer/designer.pro
+</code>
+<span class="dastx">##</span> only need linux-g++
+<code class="thtwo">mv mkspecs/linux-g++ ../
+rm -rf mkspecs/*
+mv ../linux-g++ mkspecs/
+</code></code>
+<span class="dastx">##</span> RPATH is to be set as $ORIGIN/../lib, so don't need absolute libs directory built in:
+<code class="thtwo">sed -i "s|QMAKE_RPATH.*$|QMAKE_RPATH =|" mkspecs/linux-g++/qmake.conf
+</code>
+<span class="dastx">##</span> Allow setting CC/CXX for linux-g++/qmake.conf
+<code class="thtwo">[[ ! $(grep COMPILER mkspecs/linux-g++/qmake.conf) ]] &amp;&amp; {
+echo $'--- mkspecs/linux-g++/qmake.conf
++++ mkspecs/linux-g++/qmake.conf
+@@ -11 +11 @@
+-QMAKE_CC\t\t= gcc
++QMAKE_CC\t\t= $(COMPILER)
+@@ -29 +29 @@
+-QMAKE_CXX\t\t= g++
++QMAKE_CXX\t\t= $(COMPILER_CXX)
+@@ -49,2 +49,2 @@
+-QMAKE_LINK\t\t= g++
+-QMAKE_LINK_SHLIB\t= g++
++QMAKE_LINK\t\t= $(COMPILER_CXX)
++QMAKE_LINK_SHLIB\t= $(COMPILER_CXX)' | while read line
+do
+patch -p0
+done
+}
+</code>
+<code class="thtwo">chown_fn
+</code>
+<span class="dastx">##</span> only look in sysroot for includes and libs
+<code class="thtwo">sed -i "s|/usr/include|$SYSROOT&amp;|" config.tests/{unix,x11}/*.test
+sed -i "s| /include| $SYSROOT/include|" config.tests/{unix,x11}/*.test
+sed -i "s| /lib| $SYSROOT/lib|" config.tests/{unix,x11}/*.test
+sed -i "s| /usr/lib| $SYSROOT/usr/lib|" config.tests/{unix,x11}/*.test
+sed -i "s|\"/lib|\"$SYSROOT/lib|" config.tests/unix/checkavail
+sed -i "s|/usr|$SYSROOT&amp;|" config.tests/unix/checkavail
+</code>
+<span class="dastx">##</span> Set up an arm mkspecs
+<code class="thtwo">cp -a $TMP/tmp-tqt3/dependencies/tqt3/mkspecs/linux-g++ $TMP/tmp-tqt3/dependencies/tqt3/mkspecs/linux-arm-g++
+sed -i "s|/usr|$SYSROOT&amp;|" mkspecs/linux-arm-g++/qmake.conf
+</code>
+<span class="dastx">##</span> Set -platform to arm so that tqmoc is built as an arm binary for installation on RPi3.
+<code class="thtwo">echo "yes" | CFLAGS="$SLKCFLAGS" CXXFLAGS="$SLKCFLAGS" \
+ ./configure \
+ -platform linux-arm-g++ \
+ -xplatform linux-arm-g++ \
+ -no-exceptions \
+ -prefix $TQTDIR-$VERSION \
+ -release \
+ -verbose \
+ -I$SYSROOT/usr/include \
+ -L$SYSROOT/usr/lib$LIBDIRSUFFIX \
+ -system-zlib \
+ -qt-imgfmt-png \
+ -qt-imgfmt-mng \
+ -qt-gif \
+ -thread \
+ -stl \
+ -nis \
+ -cups \
+ -pch \
+ -xft \
+ -xrender \
+ -xrandr \
+ -xcursor \
+ -tablet \
+ -xinerama \
+ -plugin-style-cde \
+ -plugin-style-compact \
+ -plugin-style-motif \
+ -plugin-style-motifplus \
+ -plugin-style-platinum \
+ -plugin-style-sgi \
+ -plugin-style-windows \
+ -fast \
+ -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib\'
+</code>
+<span class="dastx">##</span> Don't build tutorial and examples which won't be installed because the release version is being built
+<code class="thtwo">make $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools
+make install INSTALL_ROOT=$PKG
+</code>
+<code class="green"><span class="dastx">##</span> Remove some more stuff that's not needed for TDE build and run-time support
+<span class="dastx">##</span> which I haven't yet figured out how to avoid building in the first place
+
+<span class="dastx">##</span> binaries
+<code class="thtwo">rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqtmergetr
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqtcreatecw
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqtconfig
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqm2ts
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqlupdate
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqlrelease
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqlinguist
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqembed
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqdesigner
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/tqassistant
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/msg2tqm
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/bin/maketqpf
+</code>
+<span class="dastx">##</span> libraries
+<code class="thtwo">rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/lib/libtqteditor*
+rm $PKG$INSTALL_TDE/lib/tqt3-$VERSION/lib/libtqtdesignercore*
+</code></code>
+<span class="dastx">##</span> remove sysroot path from RPi3 package
+<code class="thtwo">sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib/tqt3-$VERSION/lib/libtqt-mt.la
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib/tqt3-$VERSION/lib/pkgconfig/tqt-mt.pc
+</code>
+<span class="dastx">##</span> move mkspecs/linux-arm-g++ to the TDE installation directory - it isn't needed for the RPi3 package, but is needed for building tqca-tls
+<code class="thtwo">(cd $PKG$INSTALL_TDE/lib/tqt3-$VERSION/mkspecs/
+mkdir -p $INSTALL_TDE/lib/tqt3-$VERSION/mkspecs
+mv linux-arm-g++ $INSTALL_TDE/lib/tqt3-$VERSION/mkspecs
+ln -sf linux-g++ default)
+</code>
+<span class="dastx">##</span> Link the shared libraries
+<code class="thtwo">( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX
+  for file in $PRGNAM-$VERSION/lib/*.so* ; do
+    ln -sf $file .
+  done
+)
+</code>
+<code class="thtwo">mkdir -p $PKG/etc/profile.d
+echo $"#!""/bin/sh
+# Environment variables for the Qt package.
+#
+# It's best to use the generic directory to avoid
+# compiling in a version-containing path:
+if [ -d \$TQTDIR ]; then
+  QTDIR=\$TQTDIR
+else
+  # Find the newest Qt directory and set \$QTDIR to that:
+  for qtd in \$TQTDIR-* ; do
+    if [ -d \$qtd ]; then
+      QTDIR=\$qtd
+    fi
+  done
+fi
+export QTDIR" > $PKG/etc/profile.d/$PRGNAM.sh
+chmod 755 $PKG/etc/profile.d/*
+
+strip_fn
+
+# Put a ton of links to more "normal" places.
+mkdir -p $PKG$INSTALL_TDE/bin
+( cd $PKG$INSTALL_TDE/bin
+  ln -sf ../lib$LIBDIRSUFFIX/$PRGNAM-$VERSION/bin/* .
+)
+
+mkdir -p $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
+( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
+  ln -sf ../tqt3-$VERSION/lib/pkgconfig/tqt-mt.pc .
+)
+
+# Symlink all of it:
+( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX ; ln -sf $PRGNAM-$VERSION $PRGNAM)
+
+mkdir_install_fn
+
+[[ $PREPEND != yes ]] &amp;&amp; \
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Add TQt library directories to /etc/ld.so.conf:
+if ! grep $INSTALL_TDE/lib$LIBDIRSUFFIX /etc/ld.so.conf 1> /dev/null 2> /dev/null ; then
+  echo "$INSTALL_TDE/lib$LIBDIRSUFFIX" >> /etc/ld.so.conf
+fi
+if ! grep $TQTDIR-$VERSION/lib /etc/ld.so.conf 1> /dev/null 2> /dev/null ; then
+  echo "$TQTDIR-$VERSION/lib" >> /etc/ld.so.conf
+fi
+if [ -x /sbin/ldconfig ]; then
+  /sbin/ldconfig 2> /dev/null
+fi
+
+# Update PKG_CONFIG_PATH:
+if ! grep $INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig /etc/profile.d/pkgconfig.sh
+then
+sed -i "s|pkgconfig$|pkgconfig:$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig|g" /etc/profile.d/pkgconfig.sh
+fi
+
+EOINS
+
+[[ $PREPEND == yes ]] &amp;&amp; \
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Add TQt library directories to /etc/ld.so.conf:
+sed -i "\|$INSTALL_TDE/lib$LIBDIRSUFFIX|d" /etc/ld.so.conf
+sed -i "1i $INSTALL_TDE/lib$LIBDIRSUFFIX" /etc/ld.so.conf
+sed -i "1i $TQTDIR-$VERSION/lib" /etc/ld.so.conf
+if [ -x /sbin/ldconfig ]; then
+  /sbin/ldconfig 2> /dev/null
+fi
+
+# Update PKG_CONFIG_PATH:
+sed -i "s|$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig||g;s|:$||g" /etc/profile.d/pkgconfig.sh
+sed -i "s|PKG_CONFIG_PATH=|PKG_CONFIG_PATH=$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig:|g;s|::|:|g" /etc/profile.d/pkgconfig.sh
+
+EOINS
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> install to '/' for TDE binaries
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> and install to SYSROOT for TDE headers and libs
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_tqt">close</a></span>
+</div>
+<br></div>
+<!--
+tqt - end
+-->
+
+
+<p>
+<!--
+tqtint - start
+-->
+<a name="close_tqtint"></a>
+<br>
+<span class="tabs reqd"><a href="#tqtint">&hellip; tqtinterface</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tqtint" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tqtint">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=tqtinterface
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=dependencies/
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DQT_INCLUDE_DIR=$TQTDIR/include \
+    -DQT_LIBRARY_DIR=$TQTDIR/lib \
+    -DQT_BINARY_DIR=$TQTDIR/bin \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D UIC_EXECUTABLE=$INSTALL_TDE/bin/tquic \
+    -DQT_VERSION=3 \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> edit tqmoc path from package so that when installed on RPi3, the tqmoc path is correct
+sed -i "s|$SYSROOT/x86/tqmoc|$INSTALL_TDE/bin/tqmoc|" $PKG/usr/lib/pkgconfig/tqt.pc
+sed -i "s|$SYSROOT/x86/tqmoc|$INSTALL_TDE/bin/tqmoc|" $PKG/usr/bin/tmoc
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+
+<span class="dastx">##</span> revert tqmoc path in tmoc for cross compiling
+sed -i "s|$INSTALL_TDE/bin/tqmoc|$SYSROOT/x86/tqmoc|" {,$SYSROOT}/usr/bin/tmoc
+</code></code>
+<span class="tabs"><a href="#close_tqtint">close</a></span>
+</div>
+<br></div>
+<!--
+tqtint - end
+-->
+
+
+<p>
+<!--
+arts - start
+-->
+<a name="close_arts"></a>
+<br>
+<span class="tabs reqd"><a href="#arts">&hellip; arts</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="arts" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_arts">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=arts
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=dependencies/
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_SKIP_RPATH="OFF" \
+    -DCMAKE_INSTALL_RPATH=$INSTALL_TDE/lib$LIBDIRSUFFIX \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove sysroot path from package
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib/pkgconfig/artsc.pc
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_arts">close</a></span>
+</div>
+<br></div>
+<!--
+arts - end
+-->
+
+
+<p>
+<!--
+dbus - start
+-->
+<a name="close_dbus"></a>
+<br>
+<span class="tabs reqd"><a href="#dbus">&hellip; dbus-tqt</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="dbus" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_dbus">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=dbus-tqt
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=dependencies/
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_dbus">close</a></span>
+</div>
+<br></div>
+<!--
+dbus - end
+-->
+
+
+<p>
+<!--
+dbus_1 - start
+-->
+<a name="close_dbus_1"></a>
+<br>
+<span class="tabs reqd"><a href="#dbus_1">&hellip; dbus-1-tqt</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="dbus_1" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_dbus_1">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=dbus-1-tqt
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=dependencies/
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_dbus_1">close</a></span>
+</div>
+<br></div>
+<!--
+dbus_1 - end
+-->
+
+
+<p>
+<!--
+libart - start
+-->
+<a name="close_libart"></a>
+<br>
+<span class="tabs reqd"><a href="#libart">&hellip; libart_lgpl</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="libart" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_libart">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=libart-lgpl
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=dependencies/
+untar_fn
+
+chown_fn
+
+cd_builddir_fn
+
+LDFLAGS="$SLKLDFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+CFLAGS="$SLKCFLAGS" \
+../configure \
+  --prefix=/usr \
+  --libdir=/usr/lib$LIBDIRSUFFIX \
+  --disable-static \
+  --host=$HOST
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_libart">close</a></span>
+</div>
+<br></div>
+<!--
+libart - end
+-->
+
+<p>
+<!--
+tqca_tls - start
+-->
+<a name="close_tqca_tls"></a>
+<br>
+<span class="tabs reqd"><a href="#tqca_tls">&hellip; tqca-tls</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tqca_tls" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tqca_tls">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=tqca-tls
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=dependencies/
+untar_fn
+
+chown_fn
+
+<span class="dastx">##</span> configure can't find the openssl libs, so give it a helping hand
+sed -i 's|flags;|flags + " -lssl -lcrypto ";|' configure
+<span class="dastx">##</span> choose the correct version of openssl
+sed -i 's|if(ret == 0)|// &amp;|' configure
+
+<span class="dastx">##</span> add tqt3 headers path
+sed -i "s|^INCLUDEPATH += .*$|&amp;\nINCLUDEPATH += $INSTALL_TDE/lib/tqt3-$VERSION/include|" configure
+
+<span class="dastx">##</span> add LD_LIBRARY_PATH for configure to find libtqt-mt.so.3
+LD_LIBRARY_PATH=$SYSROOT$TQTDIR/lib \
+QMAKESPEC=linux-arm-g++ \
+QTDIR=$INSTALL_TDE \
+./configure
+
+<span class="dastx">##</span> add tqt3 headers path
+sed -i "s|INCPATH  =.*$|&amp; -I$INSTALL_TDE/lib/tqt3-$VERSION/include|" Makefile
+
+make $NUMJOBS
+
+mkdir -p $PKG$TQTDIR-$VERSION/plugins/crypto/
+install -m 0755 libtqca-tls.so $PKG$TQTDIR-$VERSION/plugins/crypto/
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_tqca_tls">close</a></span>
+</div>
+<br></div>
+<!--
+tqca_tls - end
+-->
+
+
+<p>
+<!--
+tdelibs - start
+-->
+<a name="close_tdelibs"></a>
+<br>
+<span class="tabs reqd"><a href="#tdelibs">&hellip; tdelibs</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdelibs" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdelibs">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=tdelibs
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+</code>
+<span class="dastx">##</span> patch to enable tdecmshell to find TDE .desktop file in the event of a duplication in file names - TDE bug 2821
+<code class="thtwo">echo $'--- tdecmshell/main.cpp
++++ tdecmshell/main.cpp
+@@ -106,2 +106,2 @@
+-    if ( module.left( 4 ) != "kde-" &amp;&amp; service->library().isEmpty() )
+-        return locateModule( "kde-" + module );
++    if ( module.left( 4 ) != "tde-" &amp;&amp; service->library().isEmpty() )
++        return locateModule( "tde-" + module );
+' | while read line
+do
+patch -N -p0
+done || true
+
+<span class="dastx">##</span> further patch to make error message more user friendly
+echo $'--- tdecmshell/main.cpp
++++ tdecmshell/main.cpp
+@@ -98,0 +99,6 @@
++
++    if (path.left(4) == "tde-")
++        path.replace(0,4,"tde/");
++    else
++        path.prepend("tde/");
++
+@@ -101 +107 @@
+-        kdWarning(780) << "Could not find module \'" << module << "\'." << endl;
++        kdError(780) << "Could not find \'" << path << "\'." << endl;
+' | while read line
+do
+patch -N -p0
+done || true
+</code>
+<code class="thtwo">chown_fn
+
+FindTQt-patch_fn
+
+<span class="dastx">##</span> Check for avahi-tqt
+[[ $(ls $SYSROOT/$INSTALL_TDE/lib/libavahi-tqt.so.*) ]] &amp;&amp; AVAHI="ON"
+
+cd_builddir_fn
+</code>
+<span class="dastx">##</span> Add exitcodes for try_run tests which produce a cmake error when x-compiling
+<span class="dastx">##</span> Need to set CMAKE_CROSSCOMPILING_EMULATOR for try_run tests to run successfully when x-compiling
+<span class="dastx">##</span> However there are then glibc conflict errors, so set exitcodes to values that a native build would give
+<span class="dastx">##</span> Additionally, command line '-D HAVE_xxxxx_EXITCODE:STRING=x' option fails with cmake 3.12, so these builds use cmake 3.10
+<code class="thtwo"><span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D HAVE_GOOD_GETADDRINFO_EXITCODE:STRING=0 \
+    -D HAVE_OPENPTY_EXITCODE:STRING=0 \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_SKIP_RPATH="OFF" \
+    -DCMAKE_INSTALL_RPATH=$INSTALL_TDE/lib$LIBDIRSUFFIX \
+    -DWITH_CUPS="ON" \
+    -DWITH_SUDO_TDESU_BACKEND="ON" \
+    -DWITH_NETWORK_MANAGER_BACKEND="ON" \
+    -DWITH_ASPELL="OFF" \
+    -DWITH_AVAHI=${AVAHI:-"OFF"} \
+    -DWITH_LIBART="ON" \
+    -DWITH_OPENEXR="ON" \
+    -DWITH_LZMA="ON" \
+    -DWITH_XRANDR="ON" \
+    -DWITH_XCOMPOSITE="ON" \
+    -DWITH_UDISKS2="ON" \
+    -DWITH_UDISKS="ON" \
+    -DWITH_DEVKITPOWER="ON" \
+    -DWITH_LOGINDPOWER="ON" \
+    -DWITH_KDE4_MENU_SUFFIX="ON" \
+    -Wno-dev \
+..
+
+<span class="dastx">##</span> error: /usr/include/gnu/stubs.h:7:11: fatal error: gnu/stubs-32.h: No such file or directory
+<span class="dastx">##</span> Modify paths so that SYSROOT headers and libs are used:
+<span class="dastx">##</span> The alternative is to modify FindPkgConfig.cmake to prefix the INCLUDEDIR and LIBDIR results with ${CMAKE_SYSROOT}, but as this issue only surfaces here, that's probably not worth doing.
+sed -i "s|=/usr/include|=$SYSROOT/usr/include|" CMakeCache.txt
+sed -i "s|=/usr/lib|=$SYSROOT/usr/lib|" CMakeCache.txt
+
+<span class="dastx">##</span> add LD_LIBRARY_PATH for dbusxml2qt3 can't find libtqt-mt.so.3 error
+LD_LIBRARY_PATH=$SYSROOT$TQTDIR/lib \
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove sysroot path from package
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/share/cmake/tdelibs.cmake
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+
+# Update the mime database:
+if [ -x usr/bin/update-mime-database ]; then
+  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
+fi
+EOINS
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+
+<span class="dastx">##</span> prefix paths with SYSROOT for build.make => link.txt dependencies for cmake builds for consistency with pkg-config paths
+sed -i "s|\"$INSTALL_TDE|\"$SYSROOT$INSTALL_TDE|" {,$SYSROOT}$INSTALL_TDE/share/cmake/tdelibs.cmake
+<span class="dastx">##</span> reinstate the sysroot paths stripped out of the package for libz, libjpeg, libasound
+sed -i "s|;/usr|;$SYSROOT/usr|" {,$SYSROOT}$INSTALL_TDE/share/cmake/tdelibs.cmake
+</code></code>
+<span class="tabs"><a href="#close_tdelibs">close</a></span>
+</div>
+<br></div>
+<!--
+tdelibs - end
+-->
+
+
+<p>
+<!--
+tdebase - start
+-->
+<a name="close_tdebase"></a>
+<br>
+<span class="tabs reqd"><a href="#tdebase">&hellip; tdebase</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdebase" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdebase">close</a></span>
+
+<code><span class="dastx">##</span> copy meinproc to TDE installation directory, setting its location to avoid parsing errors.
+<code class="thtwo">cp $SYSROOT/x86/meinproc $INSTALL_TDE/bin/meinproc-x86
+</code>
+<code class="thtwo">cd /
+PRGNAM=tdebase
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+</code>
+<span class="dastx">##</span> picking up the wrong limits.h - MAX_PATH not defined
+<code class="thtwo">sed -i 's|&lt;limits.h>|&amp;\n#include &lt;linux/limits.h>|' kcontrol/krdb/krdb.cpp
+sed -i '20s|^|#include &lt;linux/limits.h>|' kdesktop/lock/lockprocess.cc
+</code>
+<span class="dastx">##</span> make default tdm screen text clearer against dark background and align login button with clickable area
+<span class="dastx">##</span> edit color="#ffff74" and/or color="#ff0000" for your own choice
+<code class="thtwo">echo $'
+--- tdm/kfrontend/themes/o2_enterprise/enterprise.xml
++++ tdm/kfrontend/themes/o2_enterprise/enterprise.xml
+@@ -12 +12 @@
+-\t\t\t&lt;normal color="#000000" font="Sans 10" />
++\t\t\t&lt;normal color="#ffff74" font="Sans 10" />
+@@ -39 +39 @@
+-\t\t\t&lt;pos width="box" x="540" y="188" anchor="c" height="box" />
++\t\t\t&lt;pos width="38" x="540" y="188" anchor="c" height="box" />
+@@ -42 +42 @@
+-\t\t\t\t\t&lt;pos x="90%" y="50%" anchor="c" />
++\t\t\t\t\t&lt;pos x="40%" y="50%" anchor="c" />
+@@ -59 +59 @@
+-\t\t\t\t\t\t\t\t&lt;normal color="#000000" font="Sans Condensed 10" />
++\t\t\t\t\t\t\t\t&lt;normal color="#ffff74" font="Sans Condensed 10" />
+@@ -64 +64 @@
+-\t\t\t\t\t\t\t\t&lt;normal color="#000000" font="Sans Condensed 10" />
++\t\t\t\t\t\t\t\t&lt;normal color="#ffff74" font="Sans Condensed 10" />
+@@ -86,2 +86,2 @@
+-\t\t\t\t&lt;pos x="435" y="293" anchor="s" />
+-\t\t\t\t&lt;normal color="#CD0000" font="Sans 10" />
++\t\t\t\t&lt;pos x="435" y="240" anchor="s" />
++\t\t\t\t&lt;normal color="#ff0000" font="Sans 11" />
+@@ -93,2 +93,2 @@
+-\t\t\t\t&lt;normal color="#CD0000" font="Sans 10" />
+-\t\t\t\t&lt;pos x="435" y="323" anchor="s" />
++\t\t\t\t&lt;normal color="#ff0000" font="Sans 11" />
++\t\t\t\t&lt;pos x="435" y="260" anchor="s" />
+' | while read line
+do
+patch -p0
+done
+</code>
+<span class="dastx">##</span> enable konqueror filemanagement ViewMode to be set - TDE bug 1963
+<code class="thtwo">echo $'
+--- konqueror/listview/konq_detailedlistview.desktop
++++ konqueror/listview/konq_detailedlistview.desktop
+@@ -86,0 +87 @@
++X-TDE-BrowserView-Built-Into=konqueror
+--- konqueror/iconview/konq_iconview.desktop
++++ konqueror/iconview/konq_iconview.desktop
+@@ -87,0 +88 @@
++X-TDE-BrowserView-Built-Into=konqueror
+--- konqueror/iconview/konq_multicolumnview.desktop
++++ konqueror/iconview/konq_multicolumnview.desktop
+@@ -87,0 +88 @@
++X-TDE-BrowserView-Built-Into=konqueror
+--- konqueror/listview/konq_infolistview.desktop
++++ konqueror/listview/konq_infolistview.desktop
+@@ -84,0 +85 @@
++X-TDE-BrowserView-Built-Into=konqueror
+--- konqueror/listview/konq_textview.desktop
++++ konqueror/listview/konq_textview.desktop
+@@ -87,0 +88 @@
++X-TDE-BrowserView-Built-Into=konqueror
+--- konqueror/listview/konq_treeview.desktop
++++ konqueror/listview/konq_treeview.desktop
+@@ -87,0 +88 @@
++X-TDE-BrowserView-Built-Into=konqueror
+' | while read line
+do
+patch -p0
+done
+</code>
+<span class="dastx">##</span> linux/stat.h:56:8: error: redefinition of struct statx_timestamp
+<span class="dastx">##</span> glibc-2.28 issue - commit de4afaaf00
+<code class="thtwo">echo $'--- kdesktop/lock/lockprocess.cc
++++ kdesktop/lock/lockprocess.cc
+@@ -82,3 +81,0 @@
+-#ifdef __linux__
+-#include &lt;linux/stat.h>
+-#endif
+' | while read line
+do
+patch -p0
+done
+</code>
+<span class="dastx">##</span> add libtirpc for rpc functions.
+<code class="thtwo">sed -i 's|LINK tdeio-shared|&amp; -ltirpc|' tdeioslave/nfs/CMakeLists.txt
+</code>
+<code class="thtwo">chown_fn
+
+FindTQt-patch_fn
+
+# Check for avahi-tqt
+[[ $(ls $SYSROOT$INSTALL_TDE/lib/libavahi-tqt.so.*) ]] &amp;&amp; AVAHI="ON"
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D HAVE_OPENPTY_EXITCODE:STRING=0 \
+    -D HAVE_NOGROUP_EXITCODE:STRING=0 \
+    -D HAVE_SETLOGIN_EXITCODE:STRING=1 \
+    -D HONORS_SOCKET_PERMS_EXITCODE:STRING=0 \
+    -D COVARIANT_RETURN_EXITCODE:STRING=0 \
+    -D HTDIG_SEARCH_BINARY=$SYSROOT/var/www/cgi-bin/htsearch \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DWITH_OPENEXR="ON" \
+    -DWITH_XCOMPOSITE="ON" \
+    -DWITH_XCURSOR="ON" \
+    -DWITH_SUDO_TDESU_BACKEND="ON" \
+    -DWITH_SUDO_KONSOLE_SUPER_USER_COMMAND="ON" \
+    -DWITH_PAM="OFF" \
+    -DWITH_SHADOW="ON" \
+    -DWITH_XFIXES="ON" \
+    -DWITH_XRANDR="ON" \
+    -DWITH_XRENDER="ON" \
+    -DWITH_OPENGL="ON" \
+    -DWITH_XSCREENSAVER="OFF" \
+    -DWITH_XTEST="ON" \
+    -DWITH_LIBART="ON" \
+    -DWITH_LIBUSB="OFF" \
+    -DWITH_XDMCP="ON" \
+    -DWITH_XINERAMA="ON" \
+    -D WITH_ARTS="ON" \
+    -DWITH_TDEHWLIB="ON" \
+    -DWITH_UPOWER="ON" \
+    -DWITH_PCRE="ON" \
+    -DBUILD_ALL="ON" \
+    -Wno-dev \
+    ..
+
+<span class="dastx">##</span> The linker has decided it can't find some libs to build kicker even though they've been built.
+<span class="dastx">##</span> Until the problem is fixed, this works:
+make $NUMJOBS || \
+[[ ! -e ./kicker/kicker/kicker ]] &amp;&amp; {
+sed -i 's|^.*$|&amp; ../../libkonq/libkonq.so.4 ./interfaces/libkickoffsearch_interfaces.so.0|' ./kicker/kicker/CMakeFiles/kicker.dir/link.txt  &amp;&amp; \
+make $NUMJOBS
+}
+
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove sysroot path from package
+sed -i "s|$SYSROOT||" $PKG$INSTALL_TDE/bin/khc_htsearch.pl
+
+strip_fn
+
+<span class="dastx">##</span> Add xinitrc:
+mkdir -p $PKG/etc/X11/xinit
+echo $"#!""/bin/sh
+
+userresources=\$HOME/.Xresources
+usermodmap=\$HOME/.Xmodmap
+sysresources=/etc/X11/xinit/.Xresources
+sysmodmap=/etc/X11/xinit/.Xmodmap
+
+if [ -f \$sysresources ]; then
+    /usr/bin/xrdb -merge \$sysresources
+fi
+
+if [ -f \$sysmodmap ]; then
+    /usr/bin/xmodmap \$sysmodmap
+fi
+
+if [ -f \$userresources ]; then
+    /usr/bin/xrdb -merge \$userresources
+fi
+
+if [ -f \$usermodmap ]; then
+    /usr/bin/xmodmap \$usermodmap
+fi
+
+if [ -z \"\$DESKTOP_SESSION\" -a -x /usr/bin/ck-launch-session ]; then
+  exec ck-launch-session dbus-launch --exit-with-session $INSTALL_TDE/bin/starttde
+else
+  exec dbus-launch --exit-with-session $INSTALL_TDE/bin/starttde
+fi
+" > $PKG/etc/X11/xinit/xinitrc.tde
+chmod 755 $PKG/etc/X11/xinit/xinitrc.tde
+(cd $PKG/etc/X11/xinit/
+ln -sf xinitrc.tde xinitrc)
+
+
+mkdir -p $PKG/etc/profile.d
+echo $"#!""/bin/sh
+# TDE additions:
+TDEDIR=$INSTALL_TDE
+export TDEDIR
+if [ ! \"\$XDG_CONFIG_DIRS\" = \"\" ]; then
+  XDG_CONFIG_DIRS=\$XDG_CONFIG_DIRS:$SYS_CNF_DIR/xdg
+else
+  XDG_CONFIG_DIRS=/etc/xdg:$SYS_CNF_DIR/xdg
+fi
+export XDG_CONFIG_DIRS
+" > $PKG/etc/profile.d/tde.sh
+chmod 755 $PKG/etc/profile.d/tde.sh
+
+# Add some configuration files / scripts needed by TDE.
+mv $PKG$INSTALL_TDE/share/config/tdm $PKG$SYS_CNF_DIR/tdm
+( cd $PKG$INSTALL_TDE/share/config ; ln -sf $SYS_CNF_DIR/tdm tdm )
+
+# Add rc.4.local to give TDM priority over rc.4 X11 session manager options
+# Assumes that rc.4.new from sysvinit-scripts still has the rc.4.local option
+mkdir $PKG/etc/rc.d
+echo $"#!""/bin/sh
+
+# Start TDM:
+if [ -x $INSTALL_TDE/bin/tdm ]; then
+ echo \"Using TDM (Trinity Login Manager).\"
+ echo
+# log_cleanup \"/var/log/tdm.log\"
+ exec $INSTALL_TDE/bin/tdm -nodaemon -error /var/log/tdm.log
+fi
+" > $PKG/etc/rc.d/rc.4.local
+chmod 755 $PKG/etc/rc.d/rc.4.local
+
+# Set sane permissions for the include files.
+if [ -d $PKG$INSTALL_TDE/include ]; then
+   find $PKG$INSTALL_TDE/include -type f -exec chmod 0644 {} \;
+fi
+
+# Set up config files for TDM:
+$PKG$INSTALL_TDE/bin/gentdmconf --no-old --no-old-scripts --no-backup --in $PKG$SYS_CNF_DIR/tdm
+<span class="dastx">##</span> set correct paths for config files
+sed -i "s|$INSTALL_TDE/share/config/tdm/|$SYS_CNF_DIR/tdm/|" $PKG$SYS_CNF_DIR/tdm/tdmrc
+# Allow root to login
+sed 's|AllowRootLogin=false|AllowRootLogin=true|' $PKG$SYS_CNF_DIR/tdm/tdmrc > $PKG$SYS_CNF_DIR/tdm/tdmrc.new
+<span class="dastx">##</span> Remove tdmrc which has AllowRootLogin=false set and would be used for a new installation
+<span class="dastx">##</span> The installed tdmrc will be created by doinst.sh from tdmrc.new if it doesn't exist
+rm $PKG$SYS_CNF_DIR/tdm/tdmrc
+mv $PKG$SYS_CNF_DIR/tdm/Xsession $PKG$SYS_CNF_DIR/tdm/Xsession.orig
+
+echo $"#!""/bin/sh
+# Xsession - run as user
+
+# Merged in parts of the old Xsession to load defaults from
+# Xresources and Xmodmap files, 2006-02-09 volkerdi
+
+session=\$1
+
+# This section is borrowed from the old X11 Xsession file:
+userresources=\$HOME/.Xresources
+usermodmap=\$HOME/.Xmodmap
+sysresources=/usr/lib/X11/xinit/.Xresources
+sysmodmap=/usr/lib/X11/xinit/.Xmodmap
+# merge in defaults and keymaps
+if [ -r \$sysresources ]; then
+        /usr/bin/xrdb -merge \$sysresources
+fi
+if [ -r \$sysmodmap ]; then
+        /usr/bin/xmodmap \$sysmodmap
+fi
+if [ -r \$userresources ]; then
+        /usr/bin/xrdb -merge \$userresources
+fi
+if [ -r \$usermodmap ]; then
+        /usr/bin/xmodmap \$usermodmap
+fi
+
+# Note that the respective logout scripts are not sourced.
+case \$SHELL in
+  */bash)
+    [ -z \"\$BASH\" ] &amp;&amp; exec \$SHELL \$0 \"\$@\"
+    set +o posix
+    [ -f /etc/profile ] &amp;&amp; . /etc/profile
+    if [ -f \$HOME/.bash_profile ]; then
+      . \$HOME/.bash_profile
+    elif [ -f \$HOME/.bash_login ]; then
+      . \$HOME/.bash_login
+    elif [ -f \$HOME/.profile ]; then
+      . \$HOME/.profile
+    fi
+    ;;
+  */zsh)
+    [ -z \"\$ZSH_NAME\" ] &amp;&amp; exec \$SHELL \$0 \"\$@\"
+    emulate -R zsh
+    [ -d /etc/zsh ] &amp;&amp; zdir=/etc/zsh || zdir=/etc
+    zhome=\${ZDOTDIR:-\$HOME}
+    # zshenv is always sourced automatically.
+    [ -f \$zdir/zprofile ] &amp;&amp; . \$zdir/zprofile
+    [ -f \$zhome/.zprofile ] &amp;&amp; . \$zhome/.zprofile
+    [ -f \$zdir/zlogin ] &amp;&amp; . \$zdir/zlogin
+    [ -f \$zhome/.zlogin ] &amp;&amp; . \$zhome/.zlogin
+    ;;
+  */csh|*/tcsh)
+    # [t]cshrc is always sourced automatically.
+    # Note that sourcing csh.login after .cshrc is non-standard.
+    xsess_tmp=`mktemp`
+    \$SHELL -c \"if (-f /etc/csh.login) source /etc/csh.login; if (-f ~/.login) source ~/.login; /bin/sh -c export >! \$xsess_tmp\"
+    . \$xsess_tmp
+    rm -f \$xsess_tmp
+    ;;
+  *) # Plain sh, ksh, and anything we don't know.
+    [ -f /etc/profile ] &amp;&amp; . /etc/profile
+    [ -f \$HOME/.profile ] &amp;&amp; . \$HOME/.profile
+    ;;
+esac
+
+[ -f /etc/xprofile ] &amp;&amp; . /etc/xprofile
+[ -f \$HOME/.xprofile ] &amp;&amp; . \$HOME/.xprofile
+
+case \$session in
+  \"\")
+    exec xmessage -center -buttons OK:0 -default OK \"Sorry, \$DESKTOP_SESSION is no valid session.\"
+    ;;
+  failsafe)
+    exec xterm -geometry 80x24-0-0
+    ;;
+  custom)
+    exec \$HOME/.xsession
+    ;;
+  default)
+    exec $INSTALL_TDE/bin/starttde
+    ;;
+  *)
+    eval exec \"\$session\"
+    ;;
+esac
+exec xmessage -center -buttons OK:0 -default OK \"Sorry, cannot execute \$session. Check \$DESKTOP_SESSION.desktop.\"
+" > $PKG$SYS_CNF_DIR/tdm/Xsession
+
+mv $PKG$SYS_CNF_DIR/tdm/backgroundrc $PKG$SYS_CNF_DIR/tdm/backgroundrc.new
+if [[ -r $PKG$SYS_CNF_DIR/tdm/README ]]; then
+sed -i "s|$PKG$SYS_CNF_DIR/tdm|$SYS_CNF_DIR/tdm|" $PKG$SYS_CNF_DIR/tdm/README
+fi
+
+mkdir_install_fn
+
+<span class="dastx">##</span> set up doinst.sh
+echo $"# Save old config files:
+if [ ! -L etc/X11/tdm ]; then
+  if [ -d etc/X11/tdm ]; then
+  mkdir -p .$SYS_CNF_DIR/tdm
+  cp -a etc/X11/tdm/* .$SYS_CNF_DIR/tdm
+  rm -rf etc/X11/tdm
+  ( cd etc/X11 ; ln -sf ../..$SYS_CNF_DIR/tdm tdm )
+    elif [ ! -e etc/X11/tdm ]; then
+    mkdir -p etc/X11
+    ( cd etc/X11 ; ln -sf ../..$SYS_CNF_DIR/tdm tdm )
+  fi
+fi
+
+config() {
+  NEW=\"\$1\"
+  OLD=\"\$(dirname \$NEW)/\$(basename \$NEW .new)\"
+  # If there's no config file by that name, mv it over:
+  if [ ! -r \$OLD ]; then
+    mv \$NEW \$OLD
+  elif [ \"\$(cat \$OLD | md5sum)\" = \"\$(cat \$NEW | md5sum)\" ]; then # toss the redundant copy
+    rm \$NEW
+  fi
+  # Otherwise, we leave the .new copy for the admin to consider...
+}
+config .$SYS_CNF_DIR/tdm/tdmrc.new
+config .$SYS_CNF_DIR/tdm/backgroundrc.new
+
+# Update the desktop database:
+\$(which update-desktop-database) $INSTALL_TDE/share/applications
+
+# Update the mime database:
+\$(which update-mime-database) /usr/share/mime
+
+# Update hicolor theme cache:
+\$(which gtk-update-icon-cache) -f -t $INSTALL_TDE/share/icons/hicolor
+
+# update PATH
+# upgradepkg runs this twice, so even though $TQTDIR/bin will be
+# a new PATH, it needs to be tested for the second run
+if ! grep $INSTALL_TDE/bin /etc/profile
+then
+echo \"PATH=\\\$PATH:$INSTALL_TDE/bin:$TQTDIR/bin\" >> /etc/profile
+else
+if ! grep $TQTDIR/bin /etc/profile
+then
+echo \"PATH=\\\$PATH:$TQTDIR/bin\" >> /etc/profile
+fi
+fi
+
+# update MANPATH
+if ! grep $INSTALL_TDE/man /etc/profile
+then
+echo \"export MANPATH=\\\$MANPATH:$INSTALL_TDE/man\" >> /etc/profile
+fi
+
+<span class="dastx">##</span> you may not want to do this <span class="dastx">##</span>
+# start a 'konsole' with system-wide profile
+[[ ! \$(grep -x \"source /etc/profile\" \$HOME/.bashrc ) ]] &amp;&amp; echo \"source /etc/profile\" >> \$HOME/.bashrc || true
+# don't want this
+sed -i 's|source /etc/profile.d/mc.sh|#source /etc/profile.d/mc.sh|' \$HOME/.bashrc || true
+" > $PKG/install/doinst.sh
+
+echo "<span class="dastx">##</span> set default runlevel to 4 for tdm
+sed -i 's|id:[1-5]|id:4|' etc/inittab
+" >> $PKG/install/doinst.sh
+
+makepkg_fn
+
+installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+
+<span class="dastx">##</span> prefix paths with SYSROOT for build.make => link.txt dependencies for cmake builds for consistency with pkg-config paths
+sed -i "s|\"$INSTALL_TDE|\"$SYSROOT$INSTALL_TDE|g" {,$SYSROOT}$INSTALL_TDE/share/cmake/*.cmake
+
+</code></code>
+Build times
+= 19:59 on x86_64 for x86_64
+= 21:02 on x86_64 for RPi3 using tqmoc and meinproc x86_64 binaries
+= 33:01 on x86_64 for RPi3 with tqmoc x86_64 &amp; meinproc arm
+= 49:01 on RPi3 for RPi3
+
+<span class="tabs"><a href="#close_tdebase">close</a></span>
+</div>
+<br></div>
+<!--
+tdebase - end
+-->
+
+
+<p>
+<!--
+tdeaddons - start
+-->
+<a name="close_tdeaddons"></a>
+<br>
+<span class="tabs"><a href="#tdeaddons">&hellip; tdeaddons</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdeaddons" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdeaddons">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=tdeaddons
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+# check for libatlantic [tdegames]
+[[ $(ls $SYSROOT$INSTALL_TDE/lib/libatlantic.so.*) ]] &amp;&amp; ATLANTIKDESIGNER="ON"
+
+# check for kaddressbook in tdepim
+[[ $(ls $SYSROOT$INSTALL_TDE/share/cmake/kaddressbook.cmake) ]] &amp;&amp; KADDRESSBOOK_PLUGINS="ON"
+
+# check for tdemultimedia
+[[ $(ls $SYSROOT$INSTALL_TDE/include/arts/artsmodules.h) ]] &amp;&amp; NOATUN_PLUGINS="ON"
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DWITH_ALL_OPTIONS="ON" \
+    -DBUILD_ALL="ON" \
+    -DBUILD_ATLANTIKDESIGNER=${ATLANTIKDESIGNER:-"OFF"} \
+    -DBUILD_KADDRESSBOOK_PLUGINS=${KADDRESSBOOK_PLUGINS:-"OFF"} \
+    -DBUILD_NOATUN_PLUGINS=${NOATUN_PLUGINS:-"OFF"} \
+    -Wno-dev \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+
+# Update the mime database:
+if [ -x usr/bin/update-mime-database ]; then
+  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
+fi
+
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_tdeaddons">close</a></span>
+</div>
+<br></div>
+<!--
+tdeaddons - end
+-->
+
+
+<p>
+<!--
+tdeutils - start
+-->
+<a name="close_tdeutils"></a>
+<br>
+<span class="tabs"><a href="#tdeutils">&hellip; tdeutils</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdeutils" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdeutils">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=tdeutils
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DWITH_DPMS="ON" \
+    -DWITH_XSCREENSAVER="OFF" \
+    -DWITH_SENSORS="ON" \
+    -DWITH_SNMP="OFF" \
+    -DBUILD_ALL="ON" \
+    -Wno-dev \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+
+# Update the mime database:
+if [ -x usr/bin/update-mime-database ]; then
+  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
+fi
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_tdeutils">close</a></span>
+</div>
+<br></div>
+<!--
+tdeutils - end
+-->
+
+
+<p>
+<!--
+imlib - start
+-->
+<a name="close_imlib"></a>
+<br>
+<span class="tabs opt"><a href="#imlib">&hellip; imlib</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Required for kuickshow - part of tdegraphics.
+</a></span>
+<div id="imlib" class="tab"><div class="b_prefs"><span class="tabs"><a href="#close_imlib">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=imlib
+VERSION=1.9.15
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+cd $TMP/tmp-$PRGNAM
+tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.*
+cd $PRGNAM-$VERSION
+</code>
+<span class="dastx">##</span> patches thanks to fedora
+<code class="thtwo">echo $'--- Imlib/load.c
++++ Imlib/load.c
+@@ -6,0 +7,2 @@
++#define G_MAXINT ((int) 0x7fffffff)
++
+@@ -43,0 +46,2 @@
++ *     we check G_MAXINT/4 because rend.c malloc\'s w * h * bpp
++ *     + 3 is safety margin
+@@ -48,3 +52,5 @@
+-       if( w > 32767 || h > 32767)
+-               return NULL;
+-       return malloc(w * h * 3);
++       if (w &lt;= 0 || w > 32767 ||
++           h &lt;= 0 || h > 32767 ||
++           h >= (G_MAXINT/4 - 1) / w)
++                return NULL;
++       return malloc(w * h * 3 + 3);
+@@ -194 +200 @@
+-  if (setjmp(png_ptr->jmpbuf))
++  if (setjmp(png_jmpbuf(png_ptr)))
+@@ -199 +205 @@
+-  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
++  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
+@@ -257 +263,2 @@
+-  if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
++  if (color_type == PNG_COLOR_TYPE_GRAY
++      || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+@@ -281,0 +289 @@
++#if 0
+@@ -296,0 +305 @@
++#endif
+@@ -363 +372,3 @@
+-  if(ww > 32767 || hh > 32767)
++  if (ww &lt;= 0 || ww > 32767 ||
++      hh &lt;= 0 || hh > 32767 ||
++      hh >= (G_MAXINT/sizeof(uint32)) / ww)
+@@ -445,0 +457,3 @@
++#ifdef GIFLIB_MAJOR
++  gif = DGifOpenFileHandle(fd, NULL);
++#else
+@@ -446,0 +461 @@
++#endif
+@@ -453,0 +469,3 @@
++#ifdef GIFLIB_MAJOR
++\t  fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
++#else
+@@ -454,0 +473 @@
++#endif
+@@ -460,0 +480,3 @@
++#ifdef GIFLIB_MAJOR
++\t      fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
++#else
+@@ -461,0 +484 @@
++#endif
+@@ -466 +489 @@
+-\t  if (*h > 32767 || *w > 32767)
++\t  if (*h &lt;= 0 || *h > 32767 || *w &lt;= 0 || *w > 32767)
+@@ -472,0 +496,3 @@
++#ifdef GIFLIB_MAJOR
++\t      DGifCloseFile(gif, NULL);
++#else
+@@ -473,0 +500 @@
++#endif
+@@ -478,0 +506,3 @@
++#ifdef GIFLIB_MAJOR
++\t      DGifCloseFile(gif, NULL);
++#else
+@@ -479,0 +510 @@
++#endif
+@@ -489,0 +521,3 @@
++#ifdef GIFLIB_MAJOR
++\t\t  DGifCloseFile(gif, NULL);
++#else
+@@ -490,0 +525 @@
++#endif
+@@ -578,0 +614,3 @@
++#ifdef GIFLIB_MAJOR
++  DGifCloseFile(gif, NULL);
++#else
+@@ -579,0 +618 @@
++#endif
+@@ -648 +687 @@
+-  if (bpp != 1 &amp;&amp; bpp != 4 &amp;&amp; bpp != 8 &amp;&amp; bpp &amp;&amp; 16 &amp;&amp; bpp != 24 &amp;&amp; bpp != 32)
++  if (bpp != 1 &amp;&amp; bpp != 4 &amp;&amp; bpp != 8 &amp;&amp; bpp != 16 &amp;&amp; bpp != 24 &amp;&amp; bpp != 32)
+@@ -1002,0 +1042,2 @@
++  memset(lookup, 0, sizeof(lookup));
++
+@@ -1003,0 +1045,3 @@
++  if (!line)
++    return NULL;
++
+@@ -1032 +1076 @@
+-                  if (ncolors > 32766)
++                  if (ncolors &lt;= 0 || ncolors > 32766)
+@@ -1038 +1082 @@
+-\t\t  if (cpp > 5)
++\t\t  if (cpp &lt;= 0 || cpp > 5)
+@@ -1044 +1088 @@
+-\t\t  if (*w > 32767)
++\t\t  if (*w &lt;= 0 || *w > 32767)
+@@ -1050 +1094 @@
+-\t\t  if (*h > 32767)
++\t\t  if (*h &lt;= 0 || *h > 32767)
+@@ -1082,0 +1127 @@
++\t\t      int                 space;
+@@ -1087,0 +1133 @@
++\t\t      space = sizeof(col) - 1;
+@@ -1110,4 +1156,4 @@
+-\t\t\t\t      if (col[0])
+-\t\t\t\t\tstrcat(col, " ");
+-                                      if (strlen(col) + strlen(s) < sizeof(col))
+-\t\t\t\t\tstrcat(col, s);
++\t\t\t\t      if (col[0] &amp;&amp; space > 0)
++\t\t\t\t\tstrcat(col, " "), space -= 1;
++                                      if (slen &lt;= space)
++\t\t\t\t\tstrcat(col, s), space -= slen;
+@@ -1143 +1189,2 @@
+-\t\t\t\t  strcpy(tok, s);
++\t\t\t\t  if (slen < sizeof(tok));
++\t\t\t\t    strcpy(tok, s);
+@@ -1144,0 +1192 @@
++\t\t\t\t  space = sizeof(col) - 1;
+@@ -1148,3 +1196,4 @@
+-\t\t\t\t  if (col[0])
+-\t\t\t\t    strcat(col, " ");
+-\t\t\t\t  strcat(col, s);
++\t\t\t\t  if (col[0] &amp;&amp; space > 0)
++\t\t\t\t    strcat(col, " "), space -=1;
++\t\t\t\t  if (slen &lt;= space)
++\t\t\t\t    strcat(col, s), space -= slen;
+@@ -1379 +1428 @@
+-\t  if (a > 32767)
++\t  if (a &lt;= 0 || a > 32767)
+@@ -1384 +1433 @@
+-\t  if (b > 32767)
++\t  if (b &lt;= 0 || b > 32767)
+--- Imlib/misc.c
++++ Imlib/misc.c
+@@ -677,0 +678,4 @@
++
++  id->x.shm = 0;
++  id->x.shmp = 0;
++  id->max_shm = 0;
+@@ -693 +697,2 @@
+-\t      if (XShmPixmapFormat(id->x.disp) == ZPixmap)
++\t      if ((XShmPixmapFormat(id->x.disp) == ZPixmap &amp;&amp;
++\t\t   (pm == True)))
+@@ -698 +702,0 @@
+-  else
+@@ -700,4 +704 @@
+-    {
+-      id->x.shm = 0;
+-      id->x.shmp = 0;
+-    }
++
+@@ -955,2 +956,2 @@
+-\t  if (id->x.shm)
+-\t    id->x.shmp = p->sharedpixmaps;
++\t  if (!p->sharedpixmaps)
++\t    id->x.shmp = 0;
+--- Imlib/save.c
++++ Imlib/save.c
+@@ -345 +345 @@
+-\t  if (setjmp(png_ptr->jmpbuf))
++\t  if (setjmp(png_jmpbuf(png_ptr)))
+--- Imlib/utils.c
++++ Imlib/utils.c
+@@ -1498,0 +1499 @@
++  memset(lookup, 0, sizeof(lookup));
+@@ -1502,0 +1504,15 @@
++      if (!line)
++\tbreak;
++      line = strdup(line);
++      if (!line)
++\tbreak;
++      len = strlen(line);
++      for (i = 0; i < len; ++i)
++\t{
++\t  c = line[i];
++\t  if (c < 32)
++\t    line[i] = 32;
++\t  else if (c > 127)
++\t    line[i] = 127;
++\t}
++
+@@ -1507 +1523 @@
+-\t  if (ncolors > 32766)
++\t  if (ncolors &lt;= 0 || ncolors > 32766)
+@@ -1510,0 +1527 @@
++\t      free(line);
+@@ -1513 +1530 @@
+-\t  if (cpp > 5)
++\t  if (cpp &lt;= 0 || cpp > 5)
+@@ -1516,0 +1534 @@
++\t      free(line);
+@@ -1519 +1537 @@
+-\t  if (w > 32767)
++\t  if (w &lt;= 0 || w > 32767)
+@@ -1522,0 +1541 @@
++\t      free(line);
+@@ -1525 +1544 @@
+-\t  if (h > 32767)
++\t  if (h &lt;= 0 || h > 32767)
+@@ -1528,0 +1548 @@
++\t      free(line);
+@@ -1535,0 +1556 @@
++\t      free(line);
+@@ -1544,0 +1566 @@
++\t      free(line);
+@@ -1819,0 +1842 @@
++      free(line);
+@@ -1961,2 +1984 @@
+-  
+-  if (setjmp(png_ptr->jmpbuf))
++  if (setjmp(png_jmpbuf(png_ptr)))  
+@@ -1968 +1990 @@
+-  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
++  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
+--- configure
++++ configure
+@@ -22914,2 +22913,0 @@
+-CPPFLAGS="$CPPFLAGS -I$includedir -I$prefix/include"
+-
+--- configure.in
++++ configure.in
+@@ -144,2 +143,0 @@
+-CPPFLAGS="$CPPFLAGS -I$includedir -I$prefix/include"
+-
+--- gdk_imlib/io-gif.c
++++ gdk_imlib/io-gif.c
+@@ -32,0 +33,3 @@
++#ifdef GIFLIB_MAJOR
++  gif = DGifOpenFileHandle(fd, NULL);
++#else
+@@ -33,0 +37 @@
++#endif
+@@ -45,0 +50,3 @@
++#ifdef GIFLIB_MAJOR
++\t  fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
++#else
+@@ -46,0 +54 @@
++#endif
+@@ -52,0 +61,3 @@
++#ifdef GIFLIB_MAJOR
++\t      fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
++#else
+@@ -53,0 +65 @@
++#endif
+@@ -58 +70 @@
+-\t  if(*h > 32767 || *w > 32767)
++\t  if(*h &lt;= 0 || *h > 32767 || *w &lt;= 0 || *w > 32767)
+@@ -64,0 +77,3 @@
++#ifdef GIFLIB_MAJOR
++\t      DGifCloseFile(gif, NULL);
++#else
+@@ -65,0 +81 @@
++#endif
+@@ -70,0 +87,3 @@
++#ifdef GIFLIB_MAJOR
++\t      DGifCloseFile(gif, NULL);
++#else
+@@ -71,0 +91 @@
++#endif
+@@ -81,0 +102,3 @@
++#ifdef GIFLIB_MAJOR
++\t\t  DGifCloseFile(gif, NULL);
++#else
+@@ -82,0 +106 @@
++#endif
+@@ -170,0 +195,3 @@
++#ifdef GIFLIB_MAJOR
++  DGifCloseFile(gif, NULL);
++#else
+@@ -171,0 +199 @@
++#endif
+--- gdk_imlib/io-png.c
++++ gdk_imlib/io-png.c
+@@ -43 +43 @@
+-  if (setjmp(png_ptr->jmpbuf))
++  if (setjmp(png_jmpbuf(png_ptr)))
+@@ -49 +49 @@
+-  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
++  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
+@@ -278 +278 @@
+-  if (setjmp(png_ptr->jmpbuf))
++  if (setjmp(png_jmpbuf(png_ptr)))
+@@ -284 +284 @@
+-  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
++  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
+@@ -303,0 +304,3 @@
++  if (color_type == PNG_COLOR_TYPE_GRAY &amp;&amp; bit_depth < 8)
++    png_set_expand(png_ptr);
++
+@@ -443 +446 @@
+-\tif (setjmp(png_ptr->jmpbuf))
++\tif (setjmp(png_jmpbuf(png_ptr)))
+@@ -449 +452 @@
+-\tif (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
++\tif (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
+@@ -638 +641 @@
+-\t  if (setjmp(png_ptr->jmpbuf))
++\t  if (setjmp(png_jmpbuf(png_ptr)))
+--- gdk_imlib/io-ppm.c
++++ gdk_imlib/io-ppm.c
+@@ -56 +56 @@
+-\t  if (a > 32767)
++\t  if (a &lt;= 0 || a > 32767)
+@@ -61 +61 @@
+-\t  if (b > 32767)
++\t  if (b &lt;= 0 || b > 32767)
+--- gdk_imlib/io-tiff.c
++++ gdk_imlib/io-tiff.c
+@@ -39 +39,3 @@
+-  if(ww > 32767 || hh > 32767)
++  if (ww &lt;= 0 || ww > 32767 ||
++      hh &lt;= 0 || hh > 32767 ||
++      hh >= (G_MAXINT/sizeof(uint32)) / ww)
+--- gdk_imlib/io-xpm.c
++++ gdk_imlib/io-xpm.c
+@@ -42,0 +43 @@
++  memset(lookup, 0, sizeof(lookup));
+@@ -44,0 +46,3 @@
++  if (!line)
++    return NULL;
++
+@@ -73 +77 @@
+-\t\t  if (ncolors > 32766)
++\t\t  if (ncolors &lt;= 0 || ncolors > 32766)
+@@ -79 +83 @@
+-\t\t  if (cpp > 5)
++\t\t  if (cpp &lt;= 0 || cpp > 5)
+@@ -85 +89 @@
+-\t\t  if (*w > 32767)
++\t\t  if (*w &lt;= 0 || *w > 32767)
+@@ -91 +95 @@
+-\t\t  if (*h > 32767)
++\t\t  if (*h &lt;= 0 || *h > 32767)
+@@ -122,0 +127 @@
++\t\t      int                 space;
+@@ -127,0 +133 @@
++\t\t      space = sizeof(col) - 1;
+@@ -150,4 +156,4 @@
+-\t\t\t\t      if (col[0])
+-\t\t\t\t\tstrcat(col, " ");
+-\t\t\t\t      if (strlen(col) + strlen(s) &lt; sizeof(col))
+-\t\t\t\t\tstrcat(col, s);
++\t\t\t\t      if (col[0] &amp;&amp; space > 0)
++\t\t\t\t\tstrncat(col, " ", space), space -= 1;
++\t\t\t\t      if (slen &lt;= space)
++\t\t\t\t\tstrcat(col, s), space -= slen;
+@@ -183 +189,2 @@
+-\t\t\t\t  strcpy(tok, s);
++\t\t\t\t  if (slen &lt; sizeof(tok))
++\t\t\t\t    strcpy(tok, s);
+@@ -184,0 +192 @@
++\t\t\t\t  space = sizeof(col) - 1;
+@@ -188,3 +196,4 @@
+-\t\t\t\t  if (col[0])
+-\t\t\t\t    strcat(col, " ");
+-\t\t\t\t  strcat(col, s);
++\t\t\t\t  if (col[0] &amp;&amp; space > 0)
++\t\t\t\t    strcat(col, " "), space -= 1;
++\t\t\t\t  if (slen &lt;= space)
++\t\t\t\t    strcat(col, s), space -= slen;
+--- gdk_imlib/misc.c
++++ gdk_imlib/misc.c
+@@ -676,0 +677,4 @@
++
++  id->x.shm = 0;
++  id->x.shmp = 0;
++  id->max_shm = 0;
+@@ -692 +696,2 @@
+-\t      if (XShmPixmapFormat(id->x.disp) == ZPixmap)
++\t      if ((XShmPixmapFormat(id->x.disp) == ZPixmap) &amp;&amp;
++\t\t  (pm == True))
+@@ -697 +701,0 @@
+-  else
+@@ -699,4 +703 @@
+-    {
+-      id->x.shm = 0;
+-      id->x.shmp = 0;
+-    }
++
+@@ -938,2 +939,2 @@
+-\t  if (id->x.shm)
+-\t    id->x.shmp = p->sharedpixmaps;
++\t  if (!p->sharedpixmaps)
++\t    id->x.shmp = 0;
+@@ -1357,0 +1359,2 @@
++ *\twe check G_MAX_INT/4 because rend.c malloc\'s w * h * bpp
++ *\t+ 3 is safety margin
+@@ -1362 +1365,3 @@
+-\tif( w > 32767 || h > 32767)
++\tif (w &lt;= 0 || w > 32767 ||
++\t    h &lt;= 0 || h > 32767 ||
++\t    h >= (G_MAXINT/4 - 1) / w)
+@@ -1364 +1369 @@
+-\treturn malloc(w * h * 3);
++\treturn malloc(w * h * 3 + 3);
+@@ -1365,0 +1371 @@
++
+--- gdk_imlib/utils.c
++++ gdk_imlib/utils.c
+@@ -1238,0 +1239 @@
++  memset(lookup, 0, sizeof(lookup));
+@@ -1242,0 +1244,15 @@
++      if (!line)
++\tbreak;
++      line = strdup(line);
++      if (!line)
++\tbreak;
++      len = strlen(line);
++      for (i = 0; i < len; ++i)
++        {
++\t  c = line[i];
++\t  if (c < 32)
++\t    line[i] = 32;
++\t  else if (c > 127)
++\t    line[i] = 127;
++\t}
++
+@@ -1247 +1263 @@
+-\t  if (ncolors > 32766)
++\t  if (ncolors &lt;= 0 || ncolors > 32766)
+@@ -1250,0 +1267 @@
++\t      free(line);
+@@ -1253 +1270 @@
+-\t  if (cpp > 5)
++\t  if (cpp &lt;= 0 || cpp > 5)
+@@ -1256,0 +1274 @@
++\t      free(line);
+@@ -1259 +1277 @@
+-\t  if (w > 32767)
++\t  if (w &lt;= 0 || w > 32767)
+@@ -1262,0 +1281 @@
++\t      free(line);
+@@ -1265 +1284 @@
+-\t  if (h > 32767)
++\t  if (h &lt;= 0 || h > 32767)
+@@ -1268,0 +1288 @@
++\t      free(line);
+@@ -1275,0 +1296 @@
++\t      free(line);
+@@ -1284,0 +1306 @@
++\t      free(line);
+@@ -1358 +1380 @@
+-\t\t\t      if (colptr + ls &lt;= sizeof(col))
++\t\t\t      if (colptr + ls &lt; sizeof(col))
+@@ -1560,0 +1583 @@
++      free(line);
+' | while read line
+do
+patch -p0
+done
+</code>
+<code class="thtwo">chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM-$VERSION/build-$PRGNAM/*
+CFLAGS="$SLKCFLAGS" \
+../configure \
+  --prefix=/usr \
+  --libdir=/usr/lib$LIBDIRSUFFIX \
+  --disable-static \
+  --host=$HOST
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+<span class="dastx">##</span> only need to install to $SYSROOT
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+
+</code></code>
+<span class="tabs"><a href="#close_imlib">close</a></span>
+</div>
+<br></div>
+<!--
+imlib - end
+-->
+
+
+<p>
+<!--
+tdegraph - start
+-->
+<a name="close_tdegraph"></a>
+<br>
+<span class="tabs"><a href="#tdegraph">&hellip; tdegraphics</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdegraph" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdegraph">close</a></span>
+<code><code class="thtwo">cd /
+PRGNAM=tdegraphics
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+</code>
+<span class="dastx">##</span> for R14* - bug 2957
+<code class="thtwo">echo $'--- tdefile-plugins/dependencies/poppler-tqt/ConfigureChecks.cmake
++++ tdefile-plugins/dependencies/poppler-tqt/ConfigureChecks.cmake
+@@ -27,5 +27,5 @@
+-if( NOT DEFINED HAVE_POPPLER_060 )
+-  message( STATUS "Performing Test HAVE_POPPLER_060" )
+-  if( NOT POPPLER_VERSION VERSION_LESS "0.60" )
+-    set( HAVE_POPPLER_060 1 CACHE INTERNAL "" FORCE )
+-    message( STATUS "Performing Test HAVE_POPPLER_060 - Success" )
++if( NOT DEFINED HAVE_POPPLER_058 )
++  message( STATUS "Performing Test HAVE_POPPLER_058" )
++  if( NOT POPPLER_VERSION VERSION_LESS "0.58" )
++    set( HAVE_POPPLER_058 1 CACHE INTERNAL "" FORCE )
++    message( STATUS "Performing Test HAVE_POPPLER_058 - Success" )
+@@ -33,2 +33,13 @@
+-    set( HAVE_POPPLER_060 "" CACHE INTERNAL "" FORCE )
+-    message( STATUS "Performing Test HAVE_POPPLER_060 - Failed" )
++    set( HAVE_POPPLER_058 "" CACHE INTERNAL "" FORCE )
++    message( STATUS "Performing Test HAVE_POPPLER_058 - Failed" )
++  endif( )
++endif( )
++
++if( NOT DEFINED HAVE_POPPLER_064 )
++  message( STATUS "Performing Test HAVE_POPPLER_064" )
++  if( NOT POPPLER_VERSION VERSION_LESS "0.64" )
++    set( HAVE_POPPLER_064 1 CACHE INTERNAL "" FORCE )
++    message( STATUS "Performing Test HAVE_POPPLER_064 - Success" )
++  else( )
++    set( HAVE_POPPLER_064 "" CACHE INTERNAL "" FORCE )
++    message( STATUS "Performing Test HAVE_POPPLER_064 - Failed" )
+--- config.h.cmake
++++ config.h.cmake
+@@ -4 +4,2 @@
+-#cmakedefine HAVE_POPPLER_060
++#cmakedefine HAVE_POPPLER_064
++#cmakedefine HAVE_POPPLER_058
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-document.cc
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-document.cc
+@@ -156 +156 @@
+-# if defined(HAVE_POPPLER_060)
++# if defined(HAVE_POPPLER_058)
+@@ -166 +166 @@
+-  GooString *s1;
++  CONST_064 GooString *s1;
+@@ -173 +173 @@
+-#   if defined(HAVE_POPPLER_060)
++#   if defined(HAVE_POPPLER_058)
+@@ -205 +205 @@
+-#   if !defined(HAVE_POPPLER_060)
++#   if !defined(HAVE_POPPLER_058)
+@@ -211 +211 @@
+-# if !defined(HAVE_POPPLER_060)
++# if !defined(HAVE_POPPLER_058)
+@@ -226 +226 @@
+-# if defined(HAVE_POPPLER_060)
++# if defined(HAVE_POPPLER_058)
+@@ -232 +232 @@
+-#   if !defined(HAVE_POPPLER_060)
++#   if !defined(HAVE_POPPLER_058)
+@@ -245 +245 @@
+-#   if defined(HAVE_POPPLER_060)
++#   if defined(HAVE_POPPLER_058)
+@@ -259 +259 @@
+-#\tif !defined(HAVE_POPPLER_060)
++#\tif !defined(HAVE_POPPLER_058)
+@@ -267 +267 @@
+-# if !defined(HAVE_POPPLER_060)
++# if !defined(HAVE_POPPLER_058)
+@@ -323 +323 @@
+-  GooList * items = outline->getItems();
++  CONST_064 GooList * items = outline->getItems();
+@@ -350 +350 @@
+-#if defined(HAVE_POPPLER_060) || defined(HAVE_POPPLER_030)
++#if defined(HAVE_POPPLER_058) || defined(HAVE_POPPLER_030)
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-link.cc
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-link.cc
+@@ -33,2 +33,2 @@
+-\t\tLinkDest *ld = data.ld;
+-\t\t
++\t\tCONST_064 LinkDest *ld = data.ld;
++
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-page.cc
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-page.cc
+@@ -132 +132 @@
+-#if defined(HAVE_POPPLER_060) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
++#if defined(HAVE_POPPLER_058) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
+@@ -167 +167 @@
+-#if defined(HAVE_POPPLER_060) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
++#if defined(HAVE_POPPLER_058) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
+@@ -208 +208 @@
+-#   if defined(HAVE_POPPLER_060)
++#   if defined(HAVE_POPPLER_058)
+@@ -215 +215 @@
+-#   if !defined(HAVE_POPPLER_060)
++#   if !defined(HAVE_POPPLER_058)
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-private.cc
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.cc
+@@ -34 +34 @@
+-TQString unicodeToTQString(Unicode* u, int len)
++TQString unicodeToTQString(CONST_064 Unicode* u, int len)
+@@ -44 +44 @@
+-TQString UnicodeParsedString(GooString *s1)
++TQString UnicodeParsedString(CONST_064 GooString *s1)
+@@ -89 +89 @@
+-void DocumentData::addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, GooList * items )
++void DocumentData::addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, CONST_064 GooList * items )
+@@ -99 +99 @@
+-        Unicode * uniChar = outlineItem->getTitle();
++        CONST_064 Unicode * uniChar = outlineItem->getTitle();
+@@ -109 +109 @@
+-        ::LinkAction * a = outlineItem->getAction();
++        CONST_064 ::LinkAction * a = outlineItem->getAction();
+@@ -113,2 +113,2 @@
+-            LinkGoTo * g = static_cast&lt; LinkGoTo * >( a );
+-            LinkDest * destination = g->getDest();
++            CONST_064 LinkGoTo * g = static_cast&lt; CONST_064 LinkGoTo * >( a );
++            CONST_064 LinkDest * destination = g->getDest();
+@@ -120 +120 @@
+-                GooString *s = g->getNamedDest();
++                CONST_064 GooString *s = g->getNamedDest();
+@@ -134 +134 @@
+-                    LinkGoToR * g2 = static_cast&lt; LinkGoToR * >( a );
++                    CONST_064 LinkGoToR * g2 = static_cast&lt; CONST_064 LinkGoToR * >( a );
+@@ -141 +141 @@
+-        GooList * children = outlineItem->getKids();
++        CONST_064 GooList * children = outlineItem->getKids();
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
+@@ -36,0 +37,5 @@
++#if defined(HAVE_POPPLER_064)
++#define CONST_064 const
++#else
++#define CONST_064
++#endif
+@@ -42 +47 @@
+-TQString unicodeToTQString(Unicode* u, int len);
++TQString unicodeToTQString(CONST_064 Unicode* u, int len);
+@@ -44 +49 @@
+-TQString UnicodeParsedString(GooString *s1);
++TQString UnicodeParsedString(CONST_064 GooString *s1);
+@@ -50 +55 @@
+-     LinkDestinationData( LinkDest *l, GooString *nd, Poppler::DocumentData *pdfdoc ) : ld(l), namedDest(nd), doc(pdfdoc)
++     LinkDestinationData( CONST_064 LinkDest *l, GooString *nd, Poppler::DocumentData *pdfdoc ) : ld(l), namedDest(nd), doc(pdfdoc)
+@@ -53,2 +58,2 @@
+-\t
+-     LinkDest *ld;
++
++     CONST_064 LinkDest *ld;
+@@ -87 +92 @@
+-    void addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, GooList * items );
++    void addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, CONST_064 GooList * items );
+' | while read line
+do
+patch -p0
+done
+</code>
+<span class="dastx">##</span> error: /bin/sh: squeeze: command not found
+<code class="thtwo">sed -i 's|COMMAND squeeze|COMMAND ./squeeze|' kdvi/CMakeLists.txt
+</code>
+<code class="thtwo">chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+<span class="dastx">##</span> If imlib is installed, include kuickshow:
+[[ $(ls $SYSROOT/usr/lib/libImlib.so.*) ]] &amp;&amp; KUICKSHOW=ON
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DWITH_T1LIB="OFF" \
+    -DWITH_TIFF="OFF" \
+    -DWITH_OPENEXR="OFF" \
+    -DWITH_PDF="ON" \
+    -DBUILD_ALL="ON" \
+    -DBUILD_TDEFILE_PLUGINS="ON" \
+    -DBUILD_KUICKSHOW=${KUICKSHOW:-OFF} \
+    -DBUILD_KPDF="ON" \
+    -DBUILD_KAMERA="OFF" \
+    -DBUILD_KSVG="OFF" \
+    -DBUILD_LIBKSCAN="OFF" \
+    -DBUILD_KOOKA="OFF" \
+    -Wno-dev \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code></code>
+<span class="tabs"><a href="#close_tdegraph">close</a></span>
+</div>
+<br></div>
+<!--
+tdegraph - end
+-->
+
+
+<p>
+<!--
+tdeadmin - start
+-->
+<a name="close_tdeadmin"></a>
+<br>
+<span class="tabs"><a href="#tdeadmin">&hellip; tdeadmin</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdeadmin" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdeadmin">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=tdeadmin
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+
+ltoolupdate_fn
+
+chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+LDFLAGS="$SLKLDFLAGS" \
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+MOC=$SYSROOT/x86/tqmoc \
+MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
+../configure \
+   --prefix=$INSTALL_TDE \
+   --sysconfdir=$SYS_CNF_DIR \
+   --mandir=$INSTALL_TDE/man \
+   --disable-rpath \
+   --disable-debug \
+   --enable-closure \
+   --with-pam=no \
+   --enable-libsuffix=$LIBDIRSUFFIX \
+   --host=$HOST
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove xgcc paths in package
+sed -i "s|$XGCC_DIR/arm-linux-gnueabihf|/usr|g" $PKG$INSTALL_TDE/lib/trinity/*.la
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_tdeadmin">close</a></span>
+</div>
+<br></div>
+<!--
+tdeadmin - end
+-->
+
+
+<p>
+<!--
+tdmtheme - start
+-->
+<a name="close_tdmtheme"></a>
+<br>
+<span class="tabs"><a href="#tdmtheme">&hellip; tdmtheme</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdmtheme" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdmtheme">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=tdmtheme
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=applications/
+untar_fn
+
+ltoolupdate_fn
+
+chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+LDFLAGS="$SLKLDFLAGS" \
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+MOC=$SYSROOT/x86/tqmoc \
+MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
+../configure \
+   --prefix=$INSTALL_TDE \
+   --disable-debug \
+   --sysconfdir=$SYS_CNF_DIR \
+   --mandir=$INSTALL_TDE/man \
+   --disable-rpath \
+   --enable-closure \
+   --enable-libsuffix=$LIBDIRSUFFIX \
+   --host=$HOST
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove xgcc paths in package
+sed -i "s|$XGCC_DIR/arm-linux-gnueabihf|/usr|g" $PKG$INSTALL_TDE/lib/trinity/*.la
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_tdmtheme">close</a></span>
+</div>
+<br></div>
+<!--
+tdmtheme - end
+-->
+
+
+<p>
+<!--
+knemo - start
+-->
+<a name="close_knemo"></a>
+<br>
+<span class="tabs"><a href="#knemo">&hellip; knemo</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="knemo" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_knemo">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=knemo
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+I18N=$I18N
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=applications/
+untar_fn
+
+# rename knemo icons to avoid conflict with those in tdeartwork
+rename network_ knemo_network_ src/knemod/pics/*png
+sed -i -e 's|network_|knemo_network_|g' src/{knemod/interfaceicon,kcm/configdialog}.cpp
+# widen text area in Tooltips box to avoid text wrapping
+sed -i 's|<tr><td>|<tr><td width=70%>|g' src/knemod/interfacetooltip.cpp
+# patch
+sed -i 's|Default Gateway" ), LINK_QUALITY|Default Gateway" ), GATEWAY|' src/knemod/interfacetooltip.cpp
+# set support for additional language(s) as per I18N variable
+# but only for languages available with this package
+langs="";for Lang in $I18N;do [[ -d translations/$Lang ]] &amp;&amp; langs="$langs $Lang";done
+sed -i "s|SUBDIRS=.*$|SUBDIRS=$langs|" translations/Makefile.am
+
+ltoolupdate_fn
+
+chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+LDFLAGS="$SLKLDFLAGS" \
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+MOC=$SYSROOT/x86/tqmoc \
+MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
+../configure \
+   --prefix=$INSTALL_TDE \
+   --disable-debug \
+   --sysconfdir=$SYS_CNF_DIR \
+   --mandir=$INSTALL_TDE/man \
+   --disable-rpath \
+   --enable-closure \
+   --enable-libsuffix=$LIBDIRSUFFIX \
+   --host=$HOST
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove xgcc paths in package
+sed -i "s|$XGCC_DIR/arm-linux-gnueabihf|/usr|g" $PKG$INSTALL_TDE/lib/trinity/*.la
+
+strip_fn
+
+mkdir_install_fn
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_knemo">close</a></span>
+</div>
+<br></div>
+<!--
+knemo - end
+-->
+
+
+<p>
+<!--
+krusader - start
+-->
+<a name="close_krusader"></a>
+<br>
+<span class="tabs"><a href="#krusader">&hellip; krusader</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="krusader" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_krusader">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=krusader
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+I18N=$I18N
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=applications/
+untar_fn
+
+# set support for additional language(s) as per I18N variable
+# but only for languages available with this package
+langs="";for Lang in $I18N;do [[ -e po/$Lang".po" ]] &amp;&amp; langs="$langs $Lang"".po";done
+sed -i "s|POFILES =.*$|POFILES =$langs|" po/Makefile.am
+langs=$(echo $langs | sed 's|.po||g')
+#
+[[ $I18N != *ru* ]] &amp;&amp; \
+sed -i 's| ru||' doc/Makefile.am
+
+ltoolupdate_fn
+
+chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+LDFLAGS="$SLKLDFLAGS" \
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+MOC=$SYSROOT/x86/tqmoc \
+MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
+../configure \
+   --prefix=$INSTALL_TDE \
+   --disable-debug \
+   --sysconfdir=$SYS_CNF_DIR \
+   --mandir=$INSTALL_TDE/man \
+   --disable-rpath \
+   --enable-closure \
+   --enable-libsuffix=$LIBDIRSUFFIX \
+   --host=$HOST
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+<span class="dastx">##</span> remove xgcc paths in package
+sed -i "s|$XGCC_DIR/arm-linux-gnueabihf|/usr|g" $PKG$INSTALL_TDE/lib/trinity/*.la
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+\$(which update-desktop-database) $INSTALL_TDE/share/applications
+
+# Update hicolor theme cache:
+\$(which gtk-update-icon-cache) -f -t $INSTALL_TDE/share/icons/hicolor
+
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg /tmp/$PRGNAM-$VERSION-arm_hf-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_krusader">close</a></span>
+</div>
+<br></div>
+<!--
+krusader - end
+-->
+
+
+
+<!-- DROPDOWN MENU -->
+<div>
+<ul id="menu">
+    <li><a><span style="color:#e3e3e3">&nabla;</span></a>
+      <div>
+        <p><b>Set up</b>
+        <p><a href="#gcc_x">gcc cross-compiler</a>
+        <p><a href="#qemu">qemu</a>
+        <p><a href="#Set_variables">build environment</a>
+        <p><a href="#M_proc">tqmoc and meinproc</a>
+        <p><b>Builds</b>
+        <p><a href="#tqt">&hellip; <span style="background: #E5F1FF;">tqt3</span></a>
+        <p><a href="#tqtint">&hellip; <span style="background: #E5F1FF;">tqtinterface</span></a>
+        <p><a href="#arts">&hellip; <span style="background: #E5F1FF;">arts</span></a>
+        <p><a href="#dbus">&hellip; <span style="background: #E5F1FF;">dbus-tqt</span></a>
+        <p><a href="#dbus_1">&hellip; <span style="background: #E5F1FF;">dbus-1-tqt</span></a>
+        <p><a href="#libart">&hellip; <span style="background: #E5F1FF;">libart_lgpl</span></a>
+        <p><a href="#tqca_tls">&hellip; <span style="background: #E5F1FF;">tqca-tls</span></a>
+        <p><a href="#tdelibs">&hellip; <span style="background: #E5F1FF;">tdelibs</span></a>
+        <p><a href="#tdebase">&hellip; <span style="background: #E5F1FF;">tdebase</span></a>
+        <p><a href="#tdeaddons">&hellip; tdeaddons</a>
+        <p><a href="#tdeutils">&hellip; tdeutils</a>
+        <p><a href="#imlib">&hellip; <span style="background: #FFD7F7;">imlib</span></a>
+        <p><a href="#tdegraph">&hellip; tdegraphics</a>
+        <p><a href="#tdeadmin">&hellip; tdeadmin</a>
+        <p><a href="#tdmtheme">&hellip; tdmtheme</a>
+        <p><a href="#knemo">&hellip; knemo</a>
+        <p><a href="#krusader">&hellip; krusader</a>
+      </div>
+    </li>
+</ul>
+</div>
+<!-- DROPDOWN MENU ENDS-->
+
+</body></html>
