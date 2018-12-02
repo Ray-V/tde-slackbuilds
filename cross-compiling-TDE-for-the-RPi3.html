@@ -216,6 +216,13 @@ The cross compiler is built in this tree:
     │   ├── glibc-2.28
     │   └── build-glibc
     └── <span class="green">pkg			DESTDIR for creating package</span>
+
+<span class="dastx">##</span> <b>Set installation directories</b>
+<code class="thtwo"><span class="dastx">##</span> for x-compiler
+<b>XGCC_DIR</b>=/opt/cross-pi-gcc
+<span class="dastx">##</span> for sysroot
+<b>SYSROOT</b>=$XGCC_DIR/sysroot
+</code>
 <code class="thtwo">mkdir -p /tmp/xgcc/{gcc-8,build_all}
 cd /tmp/xgcc/gcc-8
 </code>
@@ -480,9 +487,9 @@ installpkg /tmp/xgcc820-glibc2.28-${K_VER}_RPi_headers-en_GB-${ARCH}_${float:-s}
 </code></code>
 <span class="dastx">##</span> <b>Set variables</b>
 <code class="thtwo"><span class="dastx">##</span> this is where the x-compiler package has been built to install to
-<b>XGCC_DIR</b>=/opt/cross-pi-gcc
+<b>XGCC_DIR</b>=${XGCC_DIR:-/opt/cross-pi-gcc}
 <span class="dastx">##</span> this is where the sysroot has been set in the x-compiler tree
-<b>SYSROOT</b>=$XGCC_DIR/sysroot
+<b>SYSROOT</b>=${SYSROOT:-$XGCC_DIR/sysroot}
 </code>
 <span class="dastx">##</span> The arm libs and headers needed for cross compiling need to be installed in SYSROOT.
 <span class="dastx">##</span> They can be [1] directly installed to $SYSROOT if the cross compiler is to be a permanent addition to the system, otherwise [2] installed to a directory [<span class="comment">/path_to_arm_current_sysroot_directory</span>] on a storage medium through bind-mounting it to $SYSROOT for the actual build process:
@@ -1698,9 +1705,6 @@ done
 <code class="thtwo">chown_fn
 
 FindTQt-patch_fn
-
-# Check for avahi-tqt
-[[ $(ls $SYSROOT$INSTALL_TDE/lib/libavahi-tqt.so.*) ]] &amp;&amp; AVAHI="ON"
 
 cd_builddir_fn
 
