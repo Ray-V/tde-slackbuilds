@@ -159,10 +159,10 @@ The build order is:
 <span class="thtwo">To aid trouble shooting, this page has been set up so that each build can be run by selecting the contents in part or whole and pasting into a console.</span>
 <p>
 <b>TDE build environment</b><br>
-This will be the eventual build setup for the cross-compiler and sysroot.<br>
+This will be the build setup, and eventual installation, for the cross-compiler and sysroot.<br>
 The intention is that as much as possible that is required for the TDE cross compilation is contained within one directory and can be installed/mounted only when required.<br>
-* Only TDE packages required for building other TDE apps will be installed.<br>
-** sysroot libs and headers can be permanently installed within the cross-compiler tree or bind mounted from another media or directory.
+&diamondsuit;&diamondsuit; sysroot libs and headers can be permanently installed within the cross-compiler tree or bind mounted from another media or directory.<br>
+&diamondsuit; only TDE packages required for building other TDE apps will be installed.
 
 <pre>/opt
 ├── cross-pi-gcc
@@ -173,7 +173,7 @@ The intention is that as much as possible that is required for the TDE cross com
 │   │       └── <span class="comment">ld-linux-*.so.* &hellip;</span>
 │   ├── bin				cross compiler
 │   │   └── <span class="comment">$TARGET-gcc &hellip;</span>
-│   └── sysroot				**
+│   └── sysroot &diamondsuit;&diamondsuit;
 │       ├── lib$LIBDIRSUFFIX		target libraries
 │       ├── usr
 │       │   ├── include			target headers
@@ -182,68 +182,39 @@ The intention is that as much as possible that is required for the TDE cross com
 │       ├── src				source archives
 │       ├── x86				x86 binaries - qemu-$ARM, meinproc, tqmoc
 │       └── opt
-│           └── trinity			for TDE headers and libraries for pkg-config *
-└── trinity				for TDE executables used during TDE builds *</pre>
+│           └── trinity &diamondsuit;		for TDE headers and libraries for pkg-config
+└── trinity &diamondsuit;				for TDE executables used during TDE builds</pre>
+<p>
+The source archives need to be downloaded and placed in the src directory -
+<br>
+For the official release, R series, download from https://mirror.ppa.trinitydesktop.org/trinity/releases/
+<br>
+For the snapshot release, r series, download https://git.trinitydesktop.org/cgit/&lt;package>/snapshot/&lt;package>-r14.0.*.tar.gz
 <p>
 <b>Build in a chroot?</b><br>
 Yes if:<br>
 &blacktriangleright; the TDE installation directory exists on the build system,<br>
 &blacktriangleright; any of the packages being built exist on the build system, because they will be overwritten with arm versions.
 <p>
-<b>Set variables</b> for a 32-bit [armv7] or 64-bit [aarch64] build:
+Set <b>HOST</b> for a 32-bit [armv7] or 64-bit [aarch64] build for the host system - RPi3 - for the TDE builds which use the original differentiation between build, host and target.
 <br>
-<span class="dastx">##</span> <b>32-bit</b> - only tested for a hard float build
-<br>
-<code class="thtwo">export ARM=arm
-<span class="dastx">##</span> for kernel headers
-export K_ARCH=arm
-<span class="dastx">##</span> Set options for RPi3
-export PiARCH="armv8-a+crc"
-export FPU="neon-fp-armv8"
-export TUNE="cortex-a53"
-export FLOAT="hard"
-export MACH_OPTS="--with-arch=$PiARCH --with-tune=$TUNE --with-fpu=$FPU --with-float=$FLOAT"
-export glibcMACH_OPTS=$MACH_OPTS
-<span class="dastx">##</span> Set target - building cross compiler to run on x86 to build for target arm
-export TARGET="arm-linux-gnueabihf"
-<span class="green"><span class="dastx">##</span> for SYSROOT location - option [2] in setting up the build environment
-export SYSROOT_REPO=<span class="comment">/path_to_Slackware_arm_current_libs_headers_installation_directory</span></span>
+<code class="thtwob"><span class="dastx">##</span> <b>32-bit</b> - only tested for a hard float build
+<code class="thtwo">export HOST="arm-linux-gnueabihf"
 </code>
-<br>
 <span class="dastx">##</span> <b>OR:</b>
-<br>
 <span class="dastx">##</span> <b>64-bit</b>
-<br>
-<code class="thtwo">export ARM=aarch64
-<span class="dastx">##</span> for kernel headers
-export K_ARCH=arm64
-<span class="dastx">##</span> Set options for RPi3 - the build for aarch64 takes a limited number of options
-export PiARCH="armv8-a+crc"
-export TUNE="cortex-a53"
-export MACH_OPTS="--with-arch=$PiARCH --with-cpu=$TUNE"
-export glibcMACH_OPTS="--with-arch=$PiARCH --with-tune=$TUNE"
-<span class="dastx">##</span> Set target - building cross compiler to run on x86 to build for target aarch64
-export TARGET="aarch64-linux-gnu"
-<span class="green"><span class="dastx">##</span> for SYSROOT location - option [2] in setting up the build environment
-export SYSROOT_REPO=<span class="comment">/path_to_Slarm64_libs_headers_installation_directory</span></span>
-</code>
+<code class="thtwo">export HOST="aarch64-linux-gnu"
+</code></code>
 <p>
-<span class="dastx">##</span> <b>Set variables</b> for local paths:
-<br>
-<code class="thtwo"><span class="dastx">##</span> where the source archives are:
-export <b>R1405_SRC</b>=<span class="comment">/path/to/R14.0.5/source/archives</span>
-export <b>MISC_SRC</b>=<span class="comment">/path/to/misc/source/archives</span>
-
-<span class="dastx">##</span> where the Slackware packages a-y directories are:
-export <b>Slack_base</b>=<span class="comment">/path/to/Slackware/a-y_directories</span>
+<code class="thtwo">export ARM=$(echo $HOST|cut -d- -f1)
 </code>
 <p>
 <span class="dastx">##</span> <b>Set installation directories</b>
 <br>
 <code class="thtwo"><span class="dastx">##</span> for cross compiler
-export <b>XGCC_DIR</b>=/opt/cross-pi-gcc
+export XGCC_DIR=/opt/cross-pi-gcc
 <span class="dastx">##</span> for sysroot
-export <b>SYSROOT</b>=$XGCC_DIR/sysroot
+export SYSROOT=$XGCC_DIR/sysroot
 </code>
 <p>
 <!-- gcc_x - start -->
@@ -255,9 +226,9 @@ export <b>SYSROOT</b>=$XGCC_DIR/sysroot
 The cross compiler is built in this tree:
 <code>/tmp
 └── xgcc
-    ├── gcc-8			sources for a gcc-8.3.0/glibc-2.29 build
+    ├── gcc-9			sources for a gcc-9.1.0/glibc-2.29 build
     │   ├── binutils-2.32.tar.xz
-    │   ├── gcc-8.3.0.tar.xz
+    │   ├── gcc-9.1.0.tar.xz
     │   ├── glibc-2.29.tar.xz
     │   ├── gmp-6.1.2.tar.xz
     │   ├── isl-0.18.tar.bz2
@@ -267,18 +238,46 @@ The cross compiler is built in this tree:
     │   ├── linux		for kernel headers
     │   ├── binutils-2.32
     │   ├── build-binutils
-    │   ├── gcc-8.3.0
+    │   ├── gcc-9.1.0
     │   ├── build-gcc
     │   ├── glibc-2.29
     │   └── build-glibc
     └── <span class="green">pkg			DESTDIR for creating package</span>
 
-<code class="thtwo">mkdir -p /tmp/xgcc/{gcc-8,build_all}
-cd /tmp/xgcc/gcc-8
+
+<b>Set variables</b> for a 32-bit [armv7] or 64-bit [aarch64] build:
+<span class="dastx">##</span> <b>32-bit</b> - only tested for a hard float build
+<code class="thtwo"><span class="dastx">##</span> for kernel headers
+export K_ARCH=arm
+<span class="dastx">##</span> Set options for RPi3
+export PiARCH="armv8-a+crc"
+export FPU="neon-fp-armv8"
+export TUNE="cortex-a53"
+export FLOAT="hard"
+export MACH_OPTS="--with-arch=$PiARCH --with-tune=$TUNE --with-fpu=$FPU --with-float=$FLOAT"
+export glibcMACH_OPTS=$MACH_OPTS
+<span class="dastx">##</span> Set target - building cross compiler to run on x86 to build for target arm
+export TARGET=$HOST
+</code>
+<span class="dastx">##</span> <b>OR:</b>
+<span class="dastx">##</span> <b>64-bit</b>
+<code class="thtwo"><span class="dastx">##</span> for kernel headers
+export K_ARCH=arm64
+<span class="dastx">##</span> Set options for RPi3 - the build for aarch64 takes a limited number of options
+export PiARCH="armv8-a+crc"
+export TUNE="cortex-a53"
+export MACH_OPTS="--with-arch=$PiARCH --with-cpu=$TUNE"
+export glibcMACH_OPTS="--with-arch=$PiARCH --with-tune=$TUNE"
+<span class="dastx">##</span> Set target - building cross compiler to run on x86 to build for target aarch64
+export TARGET=$HOST
+</code>
+<span class="dastx">##</span> <b>Create build directories</b>
+<code class="thtwo">mkdir -p /tmp/xgcc/{gcc-9,build_all}
+cd /tmp/xgcc/gcc-9
 </code>
 <span class="dastx">##</span> <b>Get required sources</b>
 <code class="thtwo"><span style="color: #c50000;">wget https://ftpmirror.gnu.org/binutils/binutils-2.32.tar.xz
-wget https://ftpmirror.gnu.org/gcc/gcc-8.3.0/gcc-8.3.0.tar.xz
+wget https://ftpmirror.gnu.org/gcc/gcc-9.1.0/gcc-9.1.0.tar.xz
 wget https://ftpmirror.gnu.org/glibc/glibc-2.29.tar.xz
 wget https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz
 wget https://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2
@@ -291,15 +290,14 @@ wget https://ftpmirror.gnu.org/gnu/mpfr/mpfr-4.0.2.tar.xz</span>
 <code class="thtwo">cd ../build_all
 <span style="color: #c50000;">git clone --depth=1 --no-checkout https://github.com/raspberrypi/linux</span>
 </code>
-<span class="dastx">##</span> Save for future use
+<span class="dastx">##</span> Backup
 <code class="green thtwob">tar Jcf /tmp/RPi-kernel-git-$(date +%Y%m%d).tar.xz linux/
 </code></span>
-<span class="dastx">##</span> Check out the master branch
+<span class="dastx">##</span> Check out the default branch
 <code class="thtwo">cd linux
-git checkout -b master
+git checkout
 </code>
-<span class="dastx">##</span> Make headers
-<span class="dastx">##</span> These are different for 32 and 64-bit - not to be confused with the kernel build
+<span class="dastx">##</span> Make headers - these are different for 32 and 64-bit - not to be confused with the kernel build
 <code class="thtwo">make headers_install ARCH=$K_ARCH INSTALL_HDR_PATH=/tmp/headers/usr
 export K_VER=$(make kernelversion)
 (cd /tmp/headers
@@ -313,20 +311,31 @@ cd ..
 <code class="thtwo">ROOT=$SYSROOT installpkg /tmp/kernel-headers-$K_VER-RPi-$K_ARCH.txz
 </code>
 <span class="dastx">##</span> <b>Extract the archives</b>
-<code class="thtwo">tar xf ../gcc-8/binutils-2.32.tar.xz
-tar xf ../gcc-8/glibc-2.29.tar.xz
-tar xf ../gcc-8/gcc-8.3.0.tar.xz
-cd gcc-8.3.0
-ln -s ../../gcc-8/gmp-6.1.2.tar.xz .
-ln -s ../../gcc-8/mpc-1.1.0.tar.gz .
-ln -s ../../gcc-8/mpfr-4.0.2.tar.xz .
-ln -s ../../gcc-8/isl-0.18.tar.bz2 .
+<code class="thtwo">tar xf ../gcc-9/binutils-2.32.tar.xz
+tar xf ../gcc-9/glibc-2.29.tar.xz
+tar xf ../gcc-9/gcc-9.1.0.tar.xz
+cd gcc-9.1.0
+ln -s ../../gcc-9/gmp-6.1.2.tar.xz .
+ln -s ../../gcc-9/mpc-1.1.0.tar.gz .
+ln -s ../../gcc-9/mpfr-4.0.2.tar.xz .
+ln -s ../../gcc-9/isl-0.18.tar.bz2 .
 
 <span class="dastx">##</span> Update the prerequisites versions
-sed -i 's|6.1.0.tar.bz2|6.1.2.tar.xz|;s|mpfr-3.1.4.tar.bz2|mpfr-4.0.2.tar.xz|;s|0.16.1|0.18|;s|1.0.3|1.1.0|' contrib/download_prerequisites
+sed -i 's|6.1.0.tar.bz2|6.1.2.tar.xz|;s|3.1.4.tar.bz2|4.0.2.tar.xz|;s|1.0.3|1.1.0|' contrib/download_prerequisites
 
 <span class="dastx">##</span> Set up the gcc build environment
 contrib/download_prerequisites --no-verify
+</code>
+<span class="dastx">##</span> Fix build error:
+<span class="dastx">##</span>../../../../gcc-9.1.0/libsanitizer/asan/asan_linux.cc:216:21: error: ‘PATH_MAX’ was not declared in this scope
+<span class="dastx">##</span> '#include &lt;limits.h>' in asan_linux.cc isn't picking up the linux headers version which defines PATH_MAX, so add the latter:
+<code class="thtwo">echo $'--- libsanitizer/asan/asan_linux.cc
++++ libsanitizer/asan/asan_linux.cc
+@@ -33,0 +34 @@
++#include &lt;linux/limits.h>' | while read line
+do
+patch -p0
+done
 </code>
 <span class="dastx">##</span> <b>Build Binutils</b>
 <span class="dastx">##</span> The cross compiler toolchain is going to be built with defaults for the RPi3 using machine [arch/tune/fpu/float] options
@@ -342,13 +351,13 @@ DESTDIR=/tmp/xgcc/pkg make install-strip</span>
 <span class="dastx">##</span> <b>Start building gcc</b>
 <code class="thtwo">mkdir ../build-gcc
 cd ../build-gcc
-../gcc-8.3.0/configure --prefix=$XGCC_DIR --with-sysroot=$SYSROOT --target=$TARGET --enable-languages=c,c++ $MACH_OPTS --disable-multilib
+../gcc-9.1.0/configure --prefix=$XGCC_DIR --with-sysroot=$SYSROOT --target=$TARGET --enable-languages=c,c++ $MACH_OPTS --disable-multilib
 make -j4 all-gcc
 make install-gcc
 </code>
-<span class="dastx">##</span> <b>Add the cross compiler binaries to the path</b> for building glibc
+<span class="dastx">##</span> <b>Add the cross compiler binaries to PATH</b> for building glibc
 <span class="dastx">##</span> Prevents "__INT64_C" redefined and "__ARM_ARCH" is not defined errors.
-<span class="dastx">##</span> It also contains $TARGET-strip which is used to strip the glibc executables and libs.
+<span class="dastx">##</span> And includes $TARGET-strip which is used to strip the glibc executables and libs.
 <code class="thtwo">export PATH=$XGCC_DIR/bin:$PATH
 </code>
 <span class="dastx">##</span> <b>Start building glibc</b>
@@ -402,7 +411,7 @@ mv /tmp/{en_GB,locale.alias} /tmp/xgcc/pkg$XGCC_DIR/$TARGET/share/locale/
 
 <span class="dastx">##</span> Create the package
 cd /tmp/xgcc/pkg
-makepkg -l y -c n /tmp/xgcc830-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
+makepkg -l y -c n /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> <b>Remove the build area</b>
 <code class="thtwo">cd /
@@ -424,7 +433,7 @@ This is not directly related to cross compiling TDE for aarch64, but will be nee
 64-bit options are used even if this kernel, modules and blobs will be used for a 32-bit system.
 <code><span class="dastx">##</span> To keep track of where stuff is installed use the package management system - delete the cross-compiler build installation directory and re-install from the package created
 <code class="green thtwob">rm -rf $XGCC_DIR
-installpkg /tmp/xgcc830-glibc2.29-*_RPi_headers-en_GB-aarch64.txz
+installpkg /tmp/xgcc910-glibc2.29-*_RPi_headers-en_GB-aarch64.txz
 </code>
 <span class="dastx">##</span> Set PATH to include cross-compiler if not continuing from previous section
 <code class="thtwo">[[ ! $PATH ==  *$XGCC_DIR/bin* ]] &amp;&amp; export PATH=$XGCC_DIR/bin:$PATH
@@ -468,7 +477,7 @@ As detailed in <a class="extlink" href="https://docs.slackware.com/howtos:hardwa
 <!-- qemu - start -->
 <a name="close_qemu"></a>
 <br>
-<span class="tabs"><a href="#qemu">&hellip; build qemu</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Required to run arm binaries used during the cross compilation - for example tquic and tde-config.
+<span class="tabs"><a href="#qemu">&hellip; build qemu</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Required to run arm binaries used during the build - for example tquic and tde-config.
 </span>
 <div id="qemu" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_qemu">close</a></span>
 <code><code class="thtwo">cd /tmp
@@ -576,26 +585,34 @@ qemu-$ARM will be copied to sysroot in the next section &hellip;
 <code><b>Install the cross-compiler</b>
 To keep track of where stuff is installed use the package management system - delete the cross-compiler build installation directory and re-install from the package created:
 <code class="green thtwob">rm -rf $XGCC_DIR
-installpkg /tmp/xgcc830-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
-</code>
-<span class="dastx">##</span> <b>Set HOST for the host system</b> - RPi3 - for the builds that use the original differentiation between host and target
-<code class="thtwo">export <b>HOST</b>=$TARGET
+installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export SLKLDFLAGS=""
-export SLKCFLAGS=-O2
-export INSTALL_TDE="/opt/trinity"
-export COMPILER="$HOST-gcc"
-export COMPILER_CXX="$HOST-g++"
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>r14.0.6</b>
+export INSTALL_TDE=<b>/opt/trinity</b>
+export SYS_CNF_DIR=<b>/etc/trinity</b>
+[[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
+export TQTDIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3
+export COMPILER=$HOST-gcc
+export COMPILER_CXX=$HOST-g++
 export CC=$COMPILER
 export CXX=$COMPILER_CXX
-[[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX="64"
-export TQTDIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3
-export NUMJOBS=-j6
-export SYS_CNF_DIR="/etc/trinity"
-export TDE_VERSION=R14.0.5
-export BUILD=1
-export I18N=en_GB
+export NUMJOBS=<b>-j6</b>
+export BUILD=<b>1</b>
+export SLKLDFLAGS=<b>""</b>
+export SLKCFLAGS=<b>-O2</b>
+export I18N=<b>en_GB</b>
+</code>
+<span class="dastx">##</span> Set variables for local paths:
+<code class="thtwo"><span class="dastx">##</span> where the source archives are:
+export TDE_SRC=<span class="comment">/path_to_${TDE_VERSION}_source_archives</span>
+export MISC_SRC=<span class="comment">/path_to_misc_source_archives</span>
+
+<span class="dastx">##</span> where the Slackware packages a-y directories are:
+export Slack_base=<span class="comment">/path_to_[Slackware_arm_current/Slarm64]_a-y_directories</span>
+
+<span class="green"><span class="dastx">##</span> for SYSROOT location - option [2] in setting up the build environment
+export SYSROOT_REPO=<span class="comment">/path_to_[Slackware_arm_current/Slarm64]_libs_headers_installation_directory</span></span>
 </code>
 <span class="dastx">##</span> ldconfig is not going to be used during arm packages installaion because it's an x86 binary,
 <span class="dastx">##</span> nor is /etc/ld.so.conf going to be updated,
@@ -613,9 +630,9 @@ mount -B $SYSROOT_REPO $SYSROOT
 <span class="dastx">##</span> Create a source directory and place or sym-link all the source archives there
 <code class="thtwo">mkdir -p $SYSROOT/src
 <span class="comment">ln -sf $MISC_SRC/* $SYSROOT/src/
-ln -sf $R1405_SRC/* $SYSROOT/src/</span>
+ln -sf $TDE_SRC/* $SYSROOT/src/</span>
 </code>
-<span class="dastx">##</span> only need qemu-$ARM from the qemu installation - just place it somewhere the kernel can find it &hellip;
+<span class="dastx">##</span> only need qemu-$ARM from the qemu build/installation - just place it somewhere the kernel can find it &hellip;
 <code class="thtwo">mkdir -p $SYSROOT/x86
 cp /tmp/qemu-temp/usr/local/bin/qemu-$ARM $SYSROOT/x86
 rm -rf /tmp/qemu*
@@ -639,6 +656,7 @@ echo ":arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x2
 mv /sbin/ldconfig /sbin/ldconfig-bak
 export ROOT=$SYSROOT
 installpkg /tmp/kernel-headers-*-RPi-*.txz
+
 <b>cd $Slack_base</b>
 <span class="dastx">##</span> glibc must be the same version as for the cross-compiler to prevent 'undefined reference to &hellip;' errors
 installpkg l/glibc-2.29-*.txz
@@ -723,7 +741,6 @@ installpkg l/libtiff-*.txz
 installpkg l/giflib-*.txz
 <span class="dastx">##</span> + for tdegraphics
 installpkg l/poppler-*.txz
-
 <span class="dastx">##</span> + for imlib - Slarm64 deps
 installpkg l/libwebp-*.txz
 installpkg l/zstd-*.txz
@@ -756,8 +773,14 @@ export PKG_CONFIG_LIBDIR=$SYSROOT/usr/lib$LIBDIRSUFFIX/pkgconfig:$SYSROOT/usr/sh
 <code class="thtwo">untar_fn ()
 {
 cd $TMP/tmp-$PRGNAM
-tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.bz2
-cd ${SUB_DIR:-}$PRGNAM
+tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.*
+<span class="dastx">##</span> cd - the former for 'R' releases, the latter for 'r' from git and misc ..
+cd ${SUB_DIR:-}$PRGNAM 2>/dev/null || {
+cd $PRGNAM-$VERSION
+[[ -d admin ]] &amp;&amp; tar xf $SYSROOT/src/admin-$VERSION.tar.* -C admin --strip-components=1
+[[ -d cmake ]] &amp;&amp; tar xf $SYSROOT/src/cmake-$VERSION.tar.* -C cmake --strip-components=1
+[[ -d libltdl ]] &amp;&amp; tar xf $SYSROOT/src/libltdl-$VERSION.tar.* -C libltdl --strip-components=1
+}
 }
 
 chown_fn ()
@@ -840,7 +863,7 @@ echo $'--- cmake/modules/FindTQt.cmake
 +  CACHE FILEPATH "TQt uic executable path"
 +  OUTPUT_STRIP_TRAILING_WHITESPACE )' | while read line
 do
-patch -p0
+patch -N -p0
 done
 }
 
@@ -894,7 +917,7 @@ rm -rf /tmp/x86*
 <code class="thtwo">patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/meinproc
 patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/libtdecore.so.14.0.0
 </code>
-<span class="dastx">##</span> copy the x86 meinproc to TDE installation directory - it's fussy about its location, producing parsing errors otherwise.
+<span class="dastx">##</span> Copy the x86 meinproc to the TDE installation directory - it's fussy about its location, producing parsing errors otherwise.
 <code class="thtwo">mkdir -p $INSTALL_TDE/bin
 cp $SYSROOT/x86/meinproc $INSTALL_TDE/bin/meinproc-x86
 </code></code>
@@ -1044,8 +1067,9 @@ done
  -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib$LIBDIRSUFFIX\'
 </code>
 <span class="dastx">##</span> Don't build tutorial and examples which won't be installed because the release version is being built
-<span class="dastx">##</span> Build in a sub-shell to temporarily add the path to libtqt-mt.so.3 required only for this build
-<code class="thtwo">(LD_LIBRARY_PATH=$TMP/tmp-$PRGNAM/dependencies/tqt3/lib:$LD_LIBRARY_PATH \
+<span class="dastx">##</span> Build in a sub-shell to temporarily add the path to libtqt-mt.so.3
+<span class="dastx">##</span> Different PATHs for release [R] and snapshot [r] TDE versions
+<code class="thtwo">(LD_LIBRARY_PATH=$TMP/tmp-$PRGNAM/${SUB_DIR}$PRGNAM/lib:$TMP/tmp-$PRGNAM/$PRGNAM-$VERSION/lib:$LD_LIBRARY_PATH \
 make $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools)
 make install INSTALL_ROOT=$PKG
 </code>
@@ -1106,10 +1130,10 @@ else
 fi
 export QTDIR" > $PKG/etc/profile.d/$PRGNAM.sh
 chmod 755 $PKG/etc/profile.d/*
-
-strip_fn
-
-# Put a ton of links to more "normal" places.
+</code>
+<code class="thtwo">strip_fn
+</code>
+<code class="thtwo"># Put a ton of links to more "normal" places.
 mkdir -p $PKG$INSTALL_TDE/bin
 ( cd $PKG$INSTALL_TDE/bin
   ln -sf ../lib$LIBDIRSUFFIX/$PRGNAM-$VERSION/bin/* .
@@ -1122,10 +1146,10 @@ mkdir -p $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
 
 # Symlink all of it:
 ( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX ; ln -sf $PRGNAM-$VERSION $PRGNAM)
-
-mkdir_install_fn
-
-[[ $PREPEND != yes ]] &amp;&amp; \
+</code>
+<code class="thtwo">mkdir_install_fn
+</code>
+<code class="thtwo">[[ $PREPEND != yes ]] &amp;&amp; \
 cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
 # Add TQt library directories to /etc/ld.so.conf:
 if ! grep $INSTALL_TDE/lib$LIBDIRSUFFIX /etc/ld.so.conf 1> /dev/null 2> /dev/null ; then
@@ -1161,8 +1185,8 @@ sed -i "s|$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig||g;s|:$||g" /etc/profile.d/pkg
 sed -i "s|PKG_CONFIG_PATH=|PKG_CONFIG_PATH=$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig:|g;s|::|:|g" /etc/profile.d/pkgconfig.sh
 
 EOINS
-
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+</code>
+<code class="thtwo">cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
 # Update the desktop database:
 if [ -x usr/bin/update-desktop-database ]; then
   chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
@@ -1673,8 +1697,8 @@ make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove sysroot paths to libz.so, libjpeg.so, and libasound.so from package
 sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/share/cmake/tdelibs.cmake
-
-strip_fn
+</code>
+<code class="thtwo">strip_fn
 
 mkdir_install_fn
 
@@ -1696,8 +1720,8 @@ if [ -x usr/bin/update-mime-database ]; then
   chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
 fi
 EOINS
-
-makepkg_fn
+</code>
+<code class="thtwo">makepkg_fn
 
 installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
@@ -1806,7 +1830,8 @@ done
 </code>
 <span class="dastx">##</span> linux/stat.h:56:8: error: redefinition of struct statx_timestamp
 <span class="dastx">##</span> glibc-2.28+ issue - commit de4afaaf00
-<code class="thtwo">echo $'--- kdesktop/lock/lockprocess.cc
+<code class="thtwo">[[ $TDE_VERSION == R14.0.5 ]] &amp;&amp; {
+echo $'--- kdesktop/lock/lockprocess.cc
 +++ kdesktop/lock/lockprocess.cc
 @@ -82,3 +81,0 @@
 -#ifdef __linux__
@@ -1816,9 +1841,13 @@ done
 do
 patch -p0
 done
+}
 </code>
-<span class="dastx">##</span> add libtirpc for rpc functions.
-<code class="thtwo">sed -i 's|LINK tdeio-shared|&amp; -ltirpc|' tdeioslave/nfs/CMakeLists.txt
+<span class="dastx">##</span> Add libtirpc for rpc functions.
+<span class="dastx">##</span> The 32-bit, Sl current, build of r14.0.6 uses the glibc..rpc/rpc.h and fails with:
+<span class="dastx">##</span> tdeio_nfs.cpp:(.text+0x412c): undefined reference to `clnttcp_create' .. etc
+<span class="dastx">##</span> Force libtirpc for all builds:
+<code class="thtwo">sed -i 's|LINK tdeio-shared.*$|LINK tdeio-shared -ltirpc|' tdeioslave/nfs/CMakeLists.txt
 </code>
 <code class="thtwo">chown_fn
 
@@ -1875,7 +1904,7 @@ cmake-toolchain_fn
     ..
 
 <span class="dastx">##</span> The linker has decided it can't find some libs to build kicker even though they've been built.
-<span class="dastx">##</span> Until the problem is fixed, editing kicker.dir/link.txt and rerunning make works:
+<span class="dastx">##</span> Until the problem is fixed, adding their locations to link.txt and rerunning make works:
 make $NUMJOBS || \
 [[ ! -e ./kicker/kicker/kicker ]] &amp;&amp; {
 sed -i 's|^.*$|&amp; ../../libkonq/libkonq.so.4 ./interfaces/libkickoffsearch_interfaces.so.0|' ./kicker/kicker/CMakeFiles/kicker.dir/link.txt  &amp;&amp; \
@@ -1923,9 +1952,8 @@ fi
 chmod 755 $PKG/etc/X11/xinit/xinitrc.tde
 (cd $PKG/etc/X11/xinit/
 ln -sf xinitrc.tde xinitrc)
-
-
-mkdir -p $PKG/etc/profile.d
+</code>
+<code class="thtwo">mkdir -p $PKG/etc/profile.d
 echo $"#!""/bin/sh
 # TDE additions:
 TDEDIR=$INSTALL_TDE
@@ -1938,8 +1966,8 @@ fi
 export XDG_CONFIG_DIRS
 " > $PKG/etc/profile.d/tde.sh
 chmod 755 $PKG/etc/profile.d/tde.sh
-
-# Add some configuration files / scripts needed by TDE.
+</code>
+<code class="thtwo"># Add some configuration files / scripts needed by TDE.
 mv $PKG$INSTALL_TDE/share/config/tdm $PKG$SYS_CNF_DIR/tdm
 ( cd $PKG$INSTALL_TDE/share/config ; ln -sf $SYS_CNF_DIR/tdm tdm )
 
@@ -1957,13 +1985,13 @@ if [ -x $INSTALL_TDE/bin/tdm ]; then
 fi
 " > $PKG/etc/rc.d/rc.4.local
 chmod 755 $PKG/etc/rc.d/rc.4.local
-
-# Set sane permissions for the include files.
+</code>
+<code class="thtwo"># Set sane permissions for the include files.
 if [ -d $PKG$INSTALL_TDE/include ]; then
    find $PKG$INSTALL_TDE/include -type f -exec chmod 0644 {} \;
 fi
-
-# Set up config files for TDM:
+</code>
+<code class="thtwo"># Set up config files for TDM:
 $PKG$INSTALL_TDE/bin/gentdmconf --no-old --no-old-scripts --no-backup --in $PKG$SYS_CNF_DIR/tdm
 <span class="dastx">##</span> set correct paths for config files
 sed -i "s|$INSTALL_TDE/share/config/tdm/|$SYS_CNF_DIR/tdm/|" $PKG$SYS_CNF_DIR/tdm/tdmrc
@@ -1973,8 +2001,8 @@ sed 's|AllowRootLogin=false|AllowRootLogin=true|' $PKG$SYS_CNF_DIR/tdm/tdmrc > $
 <span class="dastx">##</span> The installed tdmrc will be created by doinst.sh from tdmrc.new if it doesn't exist
 rm $PKG$SYS_CNF_DIR/tdm/tdmrc
 mv $PKG$SYS_CNF_DIR/tdm/Xsession $PKG$SYS_CNF_DIR/tdm/Xsession.orig
-
-echo $"#!""/bin/sh
+</code>
+<code class="thtwo">echo $"#!""/bin/sh
 # Xsession - run as user
 
 # Merged in parts of the old Xsession to load defaults from
@@ -2062,13 +2090,13 @@ case \$session in
 esac
 exec xmessage -center -buttons OK:0 -default OK \"Sorry, cannot execute \$session. Check \$DESKTOP_SESSION.desktop.\"
 " > $PKG$SYS_CNF_DIR/tdm/Xsession
-
-mv $PKG$SYS_CNF_DIR/tdm/backgroundrc $PKG$SYS_CNF_DIR/tdm/backgroundrc.new
+</code>
+<code class="thtwo">mv $PKG$SYS_CNF_DIR/tdm/backgroundrc $PKG$SYS_CNF_DIR/tdm/backgroundrc.new
 if [[ -r $PKG$SYS_CNF_DIR/tdm/README ]]; then
 sed -i "s|$PKG$SYS_CNF_DIR/tdm|$SYS_CNF_DIR/tdm|" $PKG$SYS_CNF_DIR/tdm/README
 fi
-
-mkdir_install_fn
+</code>
+<code class="thtwo">mkdir_install_fn
 
 <span class="dastx">##</span> set up doinst.sh
 echo $"# Save old config files:
@@ -2131,11 +2159,10 @@ fi
 [[ ! \$(grep -x \"source /etc/profile\" \$HOME/.bashrc ) ]] &amp;&amp; echo \"source /etc/profile\" >> \$HOME/.bashrc || true
 # don't want this
 sed -i 's|source /etc/profile.d/mc.sh|#source /etc/profile.d/mc.sh|' \$HOME/.bashrc || true
-" > $PKG/install/doinst.sh
 
-echo "<span class="dastx">##</span> set default runlevel to 4 for tdm
+<span class="dastx">##</span> set default runlevel to 4 for tdm
 sed -i 's|id:[1-5]|id:4|' etc/inittab
-" >> $PKG/install/doinst.sh
+" > $PKG/install/doinst.sh
 </code>
 <code class="thtwo">makepkg_fn
 
@@ -2367,9 +2394,7 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-cd $TMP/tmp-$PRGNAM
-tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.*
-cd $PRGNAM-$VERSION
+untar_fn
 </code>
 <span class="dastx">##</span> patches thanks to fedora
 <code class="thtwo">echo $'--- Imlib/load.c
@@ -3035,7 +3060,7 @@ untar_fn
 +    void addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, CONST_064 GooList * items );
 ' | while read line
 do
-patch -p0
+patch -N -p0
 done
 </code>
 <span class="dastx">##</span> error: /bin/sh: squeeze: command not found
