@@ -124,6 +124,8 @@ color:darkred;
 <br>
 <h3> Cross compile Trinity Desktop Environment [TDE] for the Raspberry Pi3 </h3>
 <p>
+<div style="display:block;margin:auto;width:100%;max-width:600"><a class="extlink" href="https://ray-v.github.io/TDE-aarch64-gui.png"><img style="display:block;margin:auto;width:100%;max-width:600;max-height:338;" alt="https://ray-v.github.io/TDE-aarch64-gui.png" src="https://ray-v.github.io/TDE-aarch64-gui.png"></a>... a TDE desktop, cross compiled for aarch64, running on a RPi3.</div>
+<p>
 This is based on the <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds build scripts</a> which are used for a native RPi3 build.
 <br>
 Builds have been done for the RPi3 running systems based on Slackware-arm-current [hard float], and <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a>, with both systems using a 64-bit kernel built here.
@@ -141,25 +143,25 @@ Of the methods available for compiling TDE for the RPi3, I've tried three:
 <p>
 All methods work, but usually speed of compilation is the determining factor for which to choose.
 <p>
-Compared to a native x86_64 build on my T500, the build times are typically:
+Compared to a native x86_64 build, the build times are typically:
 <br>1] x3+
 <br>2] x10 - all binaries used here have to run through qemu
 <br>3] +25% typically - using a mix of x86_64 and arm binaries, the use of qemu can be minimized.
 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For example, tqmoc is used extensively and as it builds arch independent output, the x86_64 version can be used.
 <p>
 The build order is:
-<br>1] Build the cross compiler
-<br>2] <span class="green">Build 64-bit kernel</span>
-<br>3] Build qemu
-<br>4] Set up the build environment with tqmoc and meinproc x86 binaries
-<br>5] Build the <span style="background: #E5F1FF;">required</span> TDE packages and install them to / and sysroot
-<br>6] Build other TDE packages
+<br>1] the cross compiler
+<br>2] <span class="green">a 64-bit kernel</span>
+<br>3] qemu
+<br>4] set up the build environment with tqmoc and meinproc x86 binaries
+<br>5] the <span style="background: #E5F1FF;">required</span> TDE packages and install them to / and sysroot
+<br>6] other packages
 <br> <span class="green">Options</span> include packaging, 64-bit kernel and its components, imlib, &hellip;
 <p>
 <span class="thtwo">To aid trouble shooting, this page has been set up so that each build can be run by selecting the contents in part or whole and pasting into a console.</span>
 <p>
 <b>TDE build environment</b><br>
-This will be the build setup, and eventual installation, for the cross-compiler and sysroot.<br>
+This will be the build setup for the cross-compiler and sysroot.<br>
 The intention is that as much as possible that is required for the TDE cross compilation is contained within one directory and can be installed/mounted only when required.<br>
 &diamondsuit;&diamondsuit; sysroot libs and headers can be permanently installed within the cross-compiler tree or bind mounted from another media or directory.<br>
 &diamondsuit; only TDE packages required for building other TDE apps will be installed.
@@ -185,11 +187,13 @@ The intention is that as much as possible that is required for the TDE cross com
 │           └── trinity &diamondsuit;		for TDE headers and libraries for pkg-config
 └── trinity &diamondsuit;				for TDE executables used during TDE builds</pre>
 <p>
+<b>Source archives</b>
+<br>
 The source archives need to be downloaded and placed in the src directory -
 <br>
-For the official release, R series, download from https://mirror.ppa.trinitydesktop.org/trinity/releases/
+For the official release, R series, download from <a class="extlink" href="https://mirror.ppa.trinitydesktop.org/trinity/releases/">https://mirror.ppa.trinitydesktop.org/trinity/releases/</a>
 <br>
-For the snapshot release, r series, download https://git.trinitydesktop.org/cgit/&lt;package>/snapshot/&lt;package>-r14.0.*.tar.gz
+For the snapshot release, r series, download <span style="color:#c50000">https://git.trinitydesktop.org/cgit/<span class="comment">&lt;package></span>/snapshot/<span class="comment">&lt;package>-r14.0.*</span>.tar.gz</span>
 <p>
 <b>Build in a chroot?</b><br>
 Yes if:<br>
@@ -465,7 +469,7 @@ makepkg -l y -c n /tmp/kernel-modules-$K_VER-RPi-arm64.txz)
 rm -rf /tmp/modules
 </code></code>
 <b>Installation</b>
-As detailed in <a class="extlink" href="https://docs.slackware.com/howtos:hardware:arm:gcc_aarch64_cross-compiler#copying_the_arm64_kernel_modules_and_device_tree_blobs_dtb">Exaga's article</a>, install the kernel [Image] as kernel8.img, and dtbs, to the microSD card boot partition; and the modules to the OS partition.
+As detailed in <a class="extlink" href="https://docs.slackware.com/howtos:hardware:arm:gcc_aarch64_cross-compiler#copying_the_arm64_kernel_modules_and_device_tree_blobs_dtb">Exaga's article</a>, install the dtbs and the kernel [Image &Rightarrow; kernel8.img] to the microSD card boot partition; and the modules to the OS partition.
 
 <span class="tabs"><a href="#close_kernel">close</a></span>
 </div>
@@ -621,7 +625,7 @@ export SYSROOT_REPO=<span class="comment">/path_to_[Slackware_arm_current/Slarm6
 <code class="thtwo">export LD_LIBRARY_PATH=$SYSROOT$TQTDIR/lib:$XGCC_DIR/$HOST/lib$LIBDIRSUFFIX
 </code>
 <span class="dastx">##</span> The arm libs and headers needed for cross compiling need to be installed in SYSROOT.
-<span class="dastx">##</span> I've used packages from <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a> for the 64-bit build.
+<span class="dastx">##</span> Packages from <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a> have been used for the 64-bit build.
 <span class="dastx">##</span> They can be [1] directly installed to $SYSROOT if the cross compiler is to be a permanent addition to the system, otherwise [2] installed to a directory [$SYSROOT_REPO] which is bind-mounted to $SYSROOT:
 <code class="green thtwob"><span class="dastx">##</span> [2]:
 mkdir -p $SYSROOT_REPO
@@ -774,7 +778,7 @@ export PKG_CONFIG_LIBDIR=$SYSROOT/usr/lib$LIBDIRSUFFIX/pkgconfig:$SYSROOT/usr/sh
 {
 cd $TMP/tmp-$PRGNAM
 tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.*
-<span class="dastx">##</span> cd - the former for 'R' releases, the latter for 'r' from git and misc ..
+<span class="dastx">##</span> cd - the former for 'R' releases; the latter for 'r' from git, and misc ..
 cd ${SUB_DIR:-}$PRGNAM 2>/dev/null || {
 cd $PRGNAM-$VERSION
 [[ -d admin ]] &amp;&amp; tar xf $SYSROOT/src/admin-$VERSION.tar.* -C admin --strip-components=1
@@ -836,7 +840,7 @@ make -f admin/Makefile.common
 FindTQt-patch_fn ()
 {
 <span class="dastx">##</span> allow tqmoc path to be pre-defined
-<span class="dastx">##</span> https://mirror.git.trinitydesktop.org/gitea/TDE/tde-common-cmake/issues/29
+<span class="dastx">##</span> Ref: https://mirror.git.trinitydesktop.org/gitea/TDE/tde-common-cmake/issues/29
 <span class="dastx">##</span> commit cf2e8d2857
 echo $'--- cmake/modules/FindTQt.cmake
 +++ cmake/modules/FindTQt.cmake
@@ -2377,6 +2381,96 @@ makepkg_fn
 
 
 <p>
+<!-- tdeartwork - start -->
+<a name="close_tdeartwork"></a>
+<br>
+<span class="tabs"><a href="#tdeartwork">&hellip; tdeartwork</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdeartwork" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdeartwork">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=tdeartwork
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+SUB_DIR=""
+untar_fn
+
+chown_fn
+
+FindTQt-patch_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DWITH_ARTS="ON" \
+    -DWITH_XSCREENSAVER="OFF" \
+    -DBUILD_ALL="ON" \
+    -Wno-dev \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
+  fi
+fi
+
+# Update the mime database:
+if [ -x usr/bin/update-mime-database ]; then
+  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
+fi
+EOINS
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_tdeartwork">close</a></span>
+</div>
+<br></div>
+<!-- tdeartwork - end -->
+
+
+<p>
 <!-- imlib - start -->
 <a name="close_imlib"></a>
 <br>
@@ -3491,6 +3585,7 @@ git checkout gh-pages
         <p><a href="#tdebase">&hellip; <span style="background: #E5F1FF;">tdebase</span></a>
         <p><a href="#tdeaddons">&hellip; tdeaddons</a>
         <p><a href="#tdeutils">&hellip; tdeutils</a>
+        <p><a href="#tdeartwork">&hellip; tdeartwork</a>
         <p><a href="#imlib">&hellip; <span style="background: #FFD7F7;">imlib</span></a>
         <p><a href="#tdegraph">&hellip; tdegraphics</a>
         <p><a href="#tdeadmin">&hellip; tdeadmin</a>
