@@ -193,14 +193,14 @@ The source archives need to be downloaded and placed in the src directory -
 <br>
 For the official release, R series, download from <a class="extlink" href="https://mirror.ppa.trinitydesktop.org/trinity/releases/">https://mirror.ppa.trinitydesktop.org/trinity/releases/</a>
 <br>
-For the snapshot release, r series, download <span style="color:#c50000">https://git.trinitydesktop.org/cgit/<span class="comment">&lt;package></span>/snapshot/<span class="comment">&lt;package>-r14.0.*</span>.tar.gz</span>
+For the snapshot release, r series, download <span style="color:#c50000">https://mirror.git.trinitydesktop.org/cgit/<span class="comment">&lt;package></span>/snapshot/<span class="comment">&lt;package>-r14.0.*</span>.tar.gz</span>
 <p>
 <b>Build in a chroot?</b><br>
 Yes if:<br>
 &blacktriangleright; the TDE installation directory exists on the build system,<br>
 &blacktriangleright; any of the packages being built exist on the build system, because they will be overwritten with arm versions.
 <p>
-Set <b>HOST</b> for a 32-bit [armv7] or 64-bit [aarch64] build for the host system - RPi3 - for the TDE builds which use the original differentiation between build, host and target.
+Set <b>HOST</b> for a 32-bit [armv7] or 64-bit [aarch64] build for the host system - RPi3 - for the TDE builds which use the autotools differentiation between build, host and target.
 <br>
 <code class="thtwob"><span class="dastx">##</span> <b>32-bit</b> - only tested for a hard float build
 <code class="thtwo">export HOST="arm-linux-gnueabihf"
@@ -612,20 +612,18 @@ export I18N=<b>en_GB</b>
 export TDE_SRC=<span class="comment">/path_to_${TDE_VERSION}_source_archives</span>
 export MISC_SRC=<span class="comment">/path_to_misc_source_archives</span>
 
-<span class="dastx">##</span> where the Slackware packages a-y directories are:
+<span class="dastx">##</span> Packages from <b><i>Slarm64</i></b> have been used for the 64-bit build - download from a mirror site, for example <a class="extlink" href="https://slackware.uk/slarm64/slarm64-current/slarm64/">slackware.uk</a>
+<span class="dastx">##</span> Set <i>Slack_base</i> where the Slackware/Slarm64 packages a-y directories are:
 export Slack_base=<span class="comment">/path_to_[Slackware_arm_current/Slarm64]_a-y_directories</span>
 
 <span class="green"><span class="dastx">##</span> for SYSROOT location - option [2] in setting up the build environment
 export SYSROOT_REPO=<span class="comment">/path_to_[Slackware_arm_current/Slarm64]_libs_headers_installation_directory</span></span>
 </code>
-<span class="dastx">##</span> ldconfig is not going to be used during arm packages installaion because it's an x86 binary,
-<span class="dastx">##</span> nor is /etc/ld.so.conf going to be updated,
-<span class="dastx">##</span> so use LD_LIBRARY_PATH to find libtqt-mt.so.3 during the build.
+<span class="dastx">##</span> ldconfig is not going to be used during arm packages installaion because it's an x86 binary, nor is /etc/ld.so.conf going to be updated, so use LD_LIBRARY_PATH to find libtqt-mt.so.3 during the build.
 <span class="dastx">##</span> And add the location of the libstdc++, libssp etc. libs from the cross compiler.
 <code class="thtwo">export LD_LIBRARY_PATH=$SYSROOT$TQTDIR/lib:$XGCC_DIR/$HOST/lib$LIBDIRSUFFIX
 </code>
 <span class="dastx">##</span> The arm libs and headers needed for cross compiling need to be installed in SYSROOT.
-<span class="dastx">##</span> Packages from <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a> have been used for the 64-bit build.
 <span class="dastx">##</span> They can be [1] directly installed to $SYSROOT if the cross compiler is to be a permanent addition to the system, otherwise [2] installed to a directory [$SYSROOT_REPO] which is bind-mounted to $SYSROOT:
 <code class="green thtwob"><span class="dastx">##</span> [2]:
 mkdir -p $SYSROOT_REPO
