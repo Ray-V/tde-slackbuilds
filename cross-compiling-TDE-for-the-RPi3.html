@@ -128,7 +128,7 @@ color:darkred;
 <p>
 This is based on the <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds build scripts</a> which are used for a native RPi3 build.
 <br>
-Builds have been done for the RPi3 running systems based on Slackware-arm-current [hard float], and <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a>, with both systems using a 64-bit kernel built here.
+Builds have been done for the RPi3 running systems based on Slackware-arm-current [hard float], and <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a> [which can be downloaded from a mirror site, for example <a class="extlink" href="https://slackware.uk/slarm64/slarm64-current/slarm64/">slackware.uk</a>], with both systems using a 64-bit kernel built here.
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
@@ -192,8 +192,6 @@ The intention is that as much as possible that is required for the TDE cross com
 The source archives need to be downloaded and placed in the src directory -
 <br>
 For the official release, R series, download from <a class="extlink" href="https://mirror.ppa.trinitydesktop.org/trinity/releases/">https://mirror.ppa.trinitydesktop.org/trinity/releases/</a>
-<br>
-For the snapshot release, r series, download <span style="color:#c50000">https://mirror.git.trinitydesktop.org/cgit/<span class="comment">&lt;package></span>/snapshot/<span class="comment">&lt;package>-r14.0.*</span>.tar.gz</span>
 <p>
 <b>Build in a chroot?</b><br>
 Yes if:<br>
@@ -592,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>r14.0.6</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.7</b>
 export INSTALL_TDE=<b>/opt/trinity</b>
 export SYS_CNF_DIR=<b>/etc/trinity</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -612,7 +610,6 @@ export I18N=<b>en_GB</b>
 export TDE_SRC=<span class="comment">/path_to_${TDE_VERSION}_source_archives</span>
 export MISC_SRC=<span class="comment">/path_to_misc_source_archives</span>
 
-<span class="dastx">##</span> Packages from <b><i>Slarm64</i></b> have been used for the 64-bit build - download from a mirror site, for example <a class="extlink" href="https://slackware.uk/slarm64/slarm64-current/slarm64/">slackware.uk</a>
 <span class="dastx">##</span> Set <i>Slack_base</i> where the Slackware/Slarm64 packages a-y directories are:
 export Slack_base=<span class="comment">/path_to_[Slackware_arm_current/Slarm64]_a-y_directories</span>
 
@@ -775,14 +772,8 @@ export PKG_CONFIG_LIBDIR=$SYSROOT/usr/lib$LIBDIRSUFFIX/pkgconfig:$SYSROOT/usr/sh
 <code class="thtwo">untar_fn ()
 {
 cd $TMP/tmp-$PRGNAM
-tar xf $SYSROOT/src/$PRGNAM-$VERSION.tar.*
-<span class="dastx">##</span> cd - the former for 'R' releases; the latter for 'r' from git, and misc ..
-cd ${SUB_DIR:-}$PRGNAM 2>/dev/null || {
-cd $PRGNAM-$VERSION
-[[ -d admin ]] &amp;&amp; tar xf $SYSROOT/src/admin-$VERSION.tar.* -C admin --strip-components=1
-[[ -d cmake ]] &amp;&amp; tar xf $SYSROOT/src/cmake-$VERSION.tar.* -C cmake --strip-components=1
-[[ -d libltdl ]] &amp;&amp; tar xf $SYSROOT/src/libltdl-$VERSION.tar.* -C libltdl --strip-components=1
-}
+tar xf $SYSROOT/src/$PRGNAM-*$VERSION.tar.*
+cd $PRGNAM-*$VERSION
 }
 
 chown_fn ()
@@ -835,40 +826,6 @@ make -f admin/Makefile.common
 } 2>/dev/null
 }
 
-FindTQt-patch_fn ()
-{
-<span class="dastx">##</span> allow tqmoc path to be pre-defined
-<span class="dastx">##</span> Ref: https://mirror.git.trinitydesktop.org/gitea/TDE/tde-common-cmake/issues/29
-<span class="dastx">##</span> commit cf2e8d2857
-echo $'--- cmake/modules/FindTQt.cmake
-+++ cmake/modules/FindTQt.cmake
-@@ -21,0 +22,6 @@
-+mark_as_advanced(
-+    TMOC_EXECUTABLE
-+    MOC_EXECUTABLE
-+    UIC_EXECUTABLE
-+)
-+
-@@ -25 +31,3 @@
--  OUTPUT_VARIABLE TMOC_EXECUTABLE OUTPUT_STRIP_TRAILING_WHITESPACE )
-+  OUTPUT_VARIABLE TMOC_EXECUTABLE
-+  CACHE FILEPATH "TQt tmoc executable path"
-+  OUTPUT_STRIP_TRAILING_WHITESPACE )
-@@ -37 +45,3 @@
--  OUTPUT_VARIABLE MOC_EXECUTABLE OUTPUT_STRIP_TRAILING_WHITESPACE )
-+  OUTPUT_VARIABLE MOC_EXECUTABLE
-+  CACHE FILEPATH "TQt moc executable path"
-+  OUTPUT_STRIP_TRAILING_WHITESPACE )
-@@ -49 +59,3 @@
--  OUTPUT_VARIABLE UIC_EXECUTABLE OUTPUT_STRIP_TRAILING_WHITESPACE )
-+  OUTPUT_VARIABLE UIC_EXECUTABLE
-+  CACHE FILEPATH "TQt uic executable path"
-+  OUTPUT_STRIP_TRAILING_WHITESPACE )' | while read line
-do
-patch -N -p0
-done
-}
-
 cmake-toolchain_fn ()
 {
 echo "  set(CMAKE_SYSTEM_NAME Linux)
@@ -896,21 +853,21 @@ echo "  set(CMAKE_SYSTEM_NAME Linux)
 <span class="tabs"><a href="#M_proc">&hellip; tqmoc and meinproc x86 binaries</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;The cross compiling build time can be reduced by using x86 versions of tqmoc and meinproc which produce ARCH independent ouput. The figures for the tdebase build demonstrate how much quicker a build can be.</span>
 <div id="M_proc" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_M_proc">close</a></span>
 
-<b>tqmoc</b>, and <b>meinproc</b> with its associated x86 TDE libs, are taken from pre-built TDE x86 packages.
+<b>tqmoc</b>, and <b>meinproc</b> with its associated x86 TDE libs, are taken from <a  class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">pre-built TDE x86 packages</a>.
 <code>Variables for pre-built x86 packages - these were built to install to /opt/tde on a 64-bit system
 <code class="thtwo">INSTALL_TDE_x86="/opt/tde"
 LIBDIRSUFFIX_x86="64"
 </code>
 <span class="dastx">##</span> Install x86 packages to temporary location on BUILD system
 <code class="thtwo">cd <span class="comment">/location_of_pre-built_TDE_x86_packages</span>
-ROOT=/tmp/x86/ installpkg tqt3-R14.0.5-x86_64-*.txz tqtinterface-R14.0.5-x86_64-*.txz dbus-1-tqt-R14.0.5-x86_64-*.txz tdelibs-R14.0.5-x86_64-*.txz libart*lgpl-R14.0.5-x86_64-*.txz
+ROOT=/tmp/x86/ installpkg tqt3-$TDE_VERSION-x86_64-*.txz tqtinterface-$TDE_VERSION-x86_64-*.txz dbus-1-tqt-$TDE_VERSION-x86_64-*.txz tdelibs-$TDE_VERSION-x86_64-*.txz libart*lgpl-$TDE_VERSION-x86_64-*.txz
 </code>
 <span class="dastx">##</span> Copy tqmoc, and meinproc and its dependent libraries, to a convenient location, $SYSROOT/x86
 <code class="thtwo">cd $SYSROOT/x86
-cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-R14.0.5/bin/tqmoc .
+cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-$TDE_VERSION/bin/tqmoc .
 cp -a /tmp/x86$INSTALL_TDE_x86/bin/meinproc .
 cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/lib{DCOP,dbus-1-tqt,tde{core,fx,io,su,ui,walletclient}}.so* .
-cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-R14.0.5/lib/libtqt-mt.so* .
+cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-$TDE_VERSION/lib/libtqt-mt.so* .
 cp -a /tmp/x86/usr/lib$LIBDIRSUFFIX_x86/lib{tqt,art_lgpl_2}.so* .
 
 rm -rf /tmp/x86*
@@ -949,7 +906,6 @@ mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 PREPEND=no
 
-SUB_DIR=dependencies/
 untar_fn
 </code>
 
@@ -1070,8 +1026,7 @@ done
 </code>
 <span class="dastx">##</span> Don't build tutorial and examples which won't be installed because the release version is being built
 <span class="dastx">##</span> Build in a sub-shell to temporarily add the path to libtqt-mt.so.3
-<span class="dastx">##</span> Different PATHs for release [R] and snapshot [r] TDE versions
-<code class="thtwo">(LD_LIBRARY_PATH=$TMP/tmp-$PRGNAM/${SUB_DIR}$PRGNAM/lib:$TMP/tmp-$PRGNAM/$PRGNAM-$VERSION/lib:$LD_LIBRARY_PATH \
+<code class="thtwo">(LD_LIBRARY_PATH=$TMP/tmp-$PRGNAM/$PRGNAM-*$VERSION/lib:$LD_LIBRARY_PATH \
 make $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools)
 make install INSTALL_ROOT=$PKG
 </code>
@@ -1085,16 +1040,17 @@ rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqtconfig
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqm2ts
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlupdate
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlrelease
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlinguist
+#rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlinguist
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqembed
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqdesigner
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqassistant
+#rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqassistant
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/msg2tqm
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/maketqpf
 
 <span class="dastx">##</span> libraries
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqteditor*
 rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqtdesignercore*
+rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqassistantclient*
 </code>
 <span class="dastx">##</span> remove sysroot path from RPi3 package
 <code class="thtwo">sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqt-mt.la
@@ -1237,12 +1193,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=dependencies/
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -1307,12 +1260,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=dependencies/
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -1373,12 +1323,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=dependencies/
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -1433,12 +1380,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=dependencies/
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -1493,23 +1437,24 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=dependencies/
 untar_fn
-
-ltoolupdate_fn
 
 chown_fn
 
 cd_builddir_fn
 
-LDFLAGS="$SLKLDFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
-CFLAGS="$SLKCFLAGS" \
-../configure \
-  --prefix=/usr \
-  --libdir=/usr/lib$LIBDIRSUFFIX \
-  --disable-static \
-  --host=$HOST
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
@@ -1546,7 +1491,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=dependencies/
 untar_fn
 
 chown_fn
@@ -1604,7 +1548,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
 </code>
 <span class="dastx">##</span> patch to enable tdecmshell to find TDE .desktop file in the event of a duplication in file names - TDE bug 2821
@@ -1639,8 +1582,6 @@ patch -N -p0
 done || true
 </code>
 <code class="thtwo">chown_fn
-
-FindTQt-patch_fn
 
 <span class="dastx">##</span> Check for avahi-tqt
 [[ $(ls $SYSROOT/$INSTALL_TDE/lib$LIBDIRSUFFIX/libavahi-tqt.so.*) ]] &amp;&amp; AVAHI="ON"
@@ -1757,7 +1698,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
 </code>
 <span class="dastx">##</span> picking up the wrong limits.h - MAX_PATH not defined
@@ -1830,30 +1770,7 @@ do
 patch -p0
 done
 </code>
-<span class="dastx">##</span> linux/stat.h:56:8: error: redefinition of struct statx_timestamp
-<span class="dastx">##</span> glibc-2.28+ issue - commit de4afaaf00
-<code class="thtwo">[[ $TDE_VERSION == R14.0.5 ]] &amp;&amp; {
-echo $'--- kdesktop/lock/lockprocess.cc
-+++ kdesktop/lock/lockprocess.cc
-@@ -82,3 +81,0 @@
--#ifdef __linux__
--#include &lt;linux/stat.h>
--#endif
-' | while read line
-do
-patch -p0
-done
-}
-</code>
-<span class="dastx">##</span> Add libtirpc for rpc functions.
-<span class="dastx">##</span> The 32-bit, Sl current, build of r14.0.6 uses the glibc..rpc/rpc.h and fails with:
-<span class="dastx">##</span> tdeio_nfs.cpp:(.text+0x412c): undefined reference to `clnttcp_create' .. etc
-<span class="dastx">##</span> Force libtirpc for all builds:
-<code class="thtwo">sed -i 's|LINK tdeio-shared.*$|LINK tdeio-shared -ltirpc|' tdeioslave/nfs/CMakeLists.txt
-</code>
 <code class="thtwo">chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -1905,14 +1822,7 @@ cmake-toolchain_fn
     -Wno-dev \
     ..
 
-<span class="dastx">##</span> The linker has decided it can't find some libs to build kicker even though they've been built.
-<span class="dastx">##</span> Until the problem is fixed, adding their locations to link.txt and rerunning make works:
-make $NUMJOBS || \
-[[ ! -e ./kicker/kicker/kicker ]] &amp;&amp; {
-sed -i 's|^.*$|&amp; ../../libkonq/libkonq.so.4 ./interfaces/libkickoffsearch_interfaces.so.0|' ./kicker/kicker/CMakeFiles/kicker.dir/link.txt  &amp;&amp; \
 make $NUMJOBS
-}
-
 make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove sysroot path from package
@@ -2205,12 +2115,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 <span class="dastx">##</span> check for libatlantic [tdegames]
 [[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libatlantic.so.*) ]] &amp;&amp; ATLANTIKDESIGNER="ON"
@@ -2305,12 +2212,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -2397,12 +2301,9 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
 
 chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -2996,171 +2897,12 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
-</code>
-<span class="dastx">##</span> for R14* - bug 2957
-<code class="thtwo">echo $'--- tdefile-plugins/dependencies/poppler-tqt/ConfigureChecks.cmake
-+++ tdefile-plugins/dependencies/poppler-tqt/ConfigureChecks.cmake
-@@ -27,5 +27,5 @@
--if( NOT DEFINED HAVE_POPPLER_060 )
--  message( STATUS "Performing Test HAVE_POPPLER_060" )
--  if( NOT POPPLER_VERSION VERSION_LESS "0.60" )
--    set( HAVE_POPPLER_060 1 CACHE INTERNAL "" FORCE )
--    message( STATUS "Performing Test HAVE_POPPLER_060 - Success" )
-+if( NOT DEFINED HAVE_POPPLER_058 )
-+  message( STATUS "Performing Test HAVE_POPPLER_058" )
-+  if( NOT POPPLER_VERSION VERSION_LESS "0.58" )
-+    set( HAVE_POPPLER_058 1 CACHE INTERNAL "" FORCE )
-+    message( STATUS "Performing Test HAVE_POPPLER_058 - Success" )
-@@ -33,2 +33,13 @@
--    set( HAVE_POPPLER_060 "" CACHE INTERNAL "" FORCE )
--    message( STATUS "Performing Test HAVE_POPPLER_060 - Failed" )
-+    set( HAVE_POPPLER_058 "" CACHE INTERNAL "" FORCE )
-+    message( STATUS "Performing Test HAVE_POPPLER_058 - Failed" )
-+  endif( )
-+endif( )
-+
-+if( NOT DEFINED HAVE_POPPLER_064 )
-+  message( STATUS "Performing Test HAVE_POPPLER_064" )
-+  if( NOT POPPLER_VERSION VERSION_LESS "0.64" )
-+    set( HAVE_POPPLER_064 1 CACHE INTERNAL "" FORCE )
-+    message( STATUS "Performing Test HAVE_POPPLER_064 - Success" )
-+  else( )
-+    set( HAVE_POPPLER_064 "" CACHE INTERNAL "" FORCE )
-+    message( STATUS "Performing Test HAVE_POPPLER_064 - Failed" )
---- config.h.cmake
-+++ config.h.cmake
-@@ -4 +4,2 @@
--#cmakedefine HAVE_POPPLER_060
-+#cmakedefine HAVE_POPPLER_064
-+#cmakedefine HAVE_POPPLER_058
---- tdefile-plugins/dependencies/poppler-tqt/poppler-document.cc
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-document.cc
-@@ -156 +156 @@
--# if defined(HAVE_POPPLER_060)
-+# if defined(HAVE_POPPLER_058)
-@@ -166 +166 @@
--  GooString *s1;
-+  CONST_064 GooString *s1;
-@@ -173 +173 @@
--#   if defined(HAVE_POPPLER_060)
-+#   if defined(HAVE_POPPLER_058)
-@@ -205 +205 @@
--#   if !defined(HAVE_POPPLER_060)
-+#   if !defined(HAVE_POPPLER_058)
-@@ -211 +211 @@
--# if !defined(HAVE_POPPLER_060)
-+# if !defined(HAVE_POPPLER_058)
-@@ -226 +226 @@
--# if defined(HAVE_POPPLER_060)
-+# if defined(HAVE_POPPLER_058)
-@@ -232 +232 @@
--#   if !defined(HAVE_POPPLER_060)
-+#   if !defined(HAVE_POPPLER_058)
-@@ -245 +245 @@
--#   if defined(HAVE_POPPLER_060)
-+#   if defined(HAVE_POPPLER_058)
-@@ -259 +259 @@
--#\tif !defined(HAVE_POPPLER_060)
-+#\tif !defined(HAVE_POPPLER_058)
-@@ -267 +267 @@
--# if !defined(HAVE_POPPLER_060)
-+# if !defined(HAVE_POPPLER_058)
-@@ -323 +323 @@
--  GooList * items = outline->getItems();
-+  CONST_064 GooList * items = outline->getItems();
-@@ -350 +350 @@
--#if defined(HAVE_POPPLER_060) || defined(HAVE_POPPLER_030)
-+#if defined(HAVE_POPPLER_058) || defined(HAVE_POPPLER_030)
---- tdefile-plugins/dependencies/poppler-tqt/poppler-link.cc
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-link.cc
-@@ -33,2 +33,2 @@
--\t\tLinkDest *ld = data.ld;
--\t\t
-+\t\tCONST_064 LinkDest *ld = data.ld;
-+
---- tdefile-plugins/dependencies/poppler-tqt/poppler-page.cc
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-page.cc
-@@ -132 +132 @@
--#if defined(HAVE_POPPLER_060) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
-+#if defined(HAVE_POPPLER_058) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
-@@ -167 +167 @@
--#if defined(HAVE_POPPLER_060) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
-+#if defined(HAVE_POPPLER_058) || defined(HAVE_POPPLER_030) || defined(HAVE_POPPLER_020)
-@@ -208 +208 @@
--#   if defined(HAVE_POPPLER_060)
-+#   if defined(HAVE_POPPLER_058)
-@@ -215 +215 @@
--#   if !defined(HAVE_POPPLER_060)
-+#   if !defined(HAVE_POPPLER_058)
---- tdefile-plugins/dependencies/poppler-tqt/poppler-private.cc
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.cc
-@@ -34 +34 @@
--TQString unicodeToTQString(Unicode* u, int len)
-+TQString unicodeToTQString(CONST_064 Unicode* u, int len)
-@@ -44 +44 @@
--TQString UnicodeParsedString(GooString *s1)
-+TQString UnicodeParsedString(CONST_064 GooString *s1)
-@@ -89 +89 @@
--void DocumentData::addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, GooList * items )
-+void DocumentData::addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, CONST_064 GooList * items )
-@@ -99 +99 @@
--        Unicode * uniChar = outlineItem->getTitle();
-+        CONST_064 Unicode * uniChar = outlineItem->getTitle();
-@@ -109 +109 @@
--        ::LinkAction * a = outlineItem->getAction();
-+        CONST_064 ::LinkAction * a = outlineItem->getAction();
-@@ -113,2 +113,2 @@
--            LinkGoTo * g = static_cast&lt; LinkGoTo * >( a );
--            LinkDest * destination = g->getDest();
-+            CONST_064 LinkGoTo * g = static_cast&lt; CONST_064 LinkGoTo * >( a );
-+            CONST_064 LinkDest * destination = g->getDest();
-@@ -120 +120 @@
--                GooString *s = g->getNamedDest();
-+                CONST_064 GooString *s = g->getNamedDest();
-@@ -134 +134 @@
--                    LinkGoToR * g2 = static_cast&lt; LinkGoToR * >( a );
-+                    CONST_064 LinkGoToR * g2 = static_cast&lt; CONST_064 LinkGoToR * >( a );
-@@ -141 +141 @@
--        GooList * children = outlineItem->getKids();
-+        CONST_064 GooList * children = outlineItem->getKids();
---- tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
-@@ -36,0 +37,5 @@
-+#if defined(HAVE_POPPLER_064)
-+#define CONST_064 const
-+#else
-+#define CONST_064
-+#endif
-@@ -42 +47 @@
--TQString unicodeToTQString(Unicode* u, int len);
-+TQString unicodeToTQString(CONST_064 Unicode* u, int len);
-@@ -44 +49 @@
--TQString UnicodeParsedString(GooString *s1);
-+TQString UnicodeParsedString(CONST_064 GooString *s1);
-@@ -50 +55 @@
--     LinkDestinationData( LinkDest *l, GooString *nd, Poppler::DocumentData *pdfdoc ) : ld(l), namedDest(nd), doc(pdfdoc)
-+     LinkDestinationData( CONST_064 LinkDest *l, GooString *nd, Poppler::DocumentData *pdfdoc ) : ld(l), namedDest(nd), doc(pdfdoc)
-@@ -53,2 +58,2 @@
--\t
--     LinkDest *ld;
-+
-+     CONST_064 LinkDest *ld;
-@@ -87 +92 @@
--    void addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, GooList * items );
-+    void addTocChildren( TQDomDocument * docSyn, TQDomNode * parent, CONST_064 GooList * items );
-' | while read line
-do
-patch -N -p0
-done
 </code>
 <span class="dastx">##</span> error: /bin/sh: squeeze: command not found
 <code class="thtwo">sed -i 's|COMMAND squeeze|COMMAND ./squeeze|' kdvi/CMakeLists.txt
 </code>
 <code class="thtwo">chown_fn
-
-FindTQt-patch_fn
 
 cd_builddir_fn
 
@@ -3249,7 +2991,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=""
 untar_fn
 
 ltoolupdate_fn
@@ -3278,8 +3019,11 @@ MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
 make $NUMJOBS
 make DESTDIR=$PKG install
 
-<span class="dastx">##</span> remove xgcc paths in package
+<span class="dastx">##</span> remove XGCC and SYSROOT paths in package
 sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+<span class="dastx">##</span> tidy up some anomalies
+sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
@@ -3331,7 +3075,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=applications/
 untar_fn
 
 ltoolupdate_fn
@@ -3361,6 +3104,9 @@ make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove xgcc paths in package
 sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+<span class="dastx">##</span> tidy up some anomalies
+sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
@@ -3406,7 +3152,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=applications/
 untar_fn
 
 # rename knemo icons to avoid conflict with those in tdeartwork
@@ -3448,6 +3193,9 @@ make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove xgcc paths in package
 sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+<span class="dastx">##</span> tidy up some anomalies
+sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
@@ -3486,7 +3234,6 @@ OUTPUT=/tmp
 mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
-SUB_DIR=applications/
 untar_fn
 
 <span class="dastx">##</span> set support for additional language(s) as per I18N variable
@@ -3525,6 +3272,9 @@ make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove xgcc paths in package
 sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+<span class="dastx">##</span> tidy up some anomalies
+sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
