@@ -126,7 +126,7 @@ color:darkred;
 <p>
 <div style="display:block;margin:auto;width:100%;max-width:600"><a class="extlink" href="https://ray-v.github.io/TDE-aarch64-gui.png"><img style="display:block;margin:auto;width:100%;max-width:600;max-height:338;" alt="https://ray-v.github.io/TDE-aarch64-gui.png" src="https://ray-v.github.io/TDE-aarch64-gui.png"></a>... a TDE desktop, cross compiled for aarch64, running on a RPi3.</div>
 <p>
-This is based on the <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds build scripts</a> which are used for a native RPi3 build.
+This is based on the <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds build scripts</a> which can be used for a native RPi3 build.
 <br>
 Builds have been done for the RPi3 running systems based on Slackware-arm-current [hard float], and <a class="extlink" href="http://dl.fail.pp.ua/slackware/slarm64-current/">Slarm64</a> [which can be downloaded from a mirror site, for example <a class="extlink" href="https://slackware.uk/slarm64/slarm64-current/slarm64/">slackware.uk</a>], with both systems using a 64-bit kernel built here.
 <br>
@@ -184,8 +184,8 @@ The intention is that as much as possible that is required for the TDE cross com
 │       ├── src				source archives
 │       ├── x86				x86 binaries - qemu-$ARM, meinproc, tqmoc
 │       └── opt
-│           └── trinity &diamondsuit;		for TDE headers and libraries for pkg-config
-└── trinity &diamondsuit;				for TDE executables used during TDE builds</pre>
+│           └── tde &diamondsuit;			for TDE headers and libraries for pkg-config
+└── tde &diamondsuit;				for TDE executables used during TDE builds</pre>
 <p>
 <b>Source archives</b>
 <br>
@@ -590,15 +590,16 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.7</b>
-export INSTALL_TDE=<b>/opt/trinity</b>
-export SYS_CNF_DIR=<b>/etc/trinity</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.8</b>
+export INSTALL_TDE=<b>/opt/tde</b>
+export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
-export TQTDIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3
+export TQTDIR=$INSTALL_TDE
 export COMPILER=$HOST-gcc
 export COMPILER_CXX=$HOST-g++
 export CC=$COMPILER
 export CXX=$COMPILER_CXX
+export PLUGIN_INSTALL_DIR=tde
 export NUMJOBS=<b>-j6</b>
 export BUILD=<b>1</b>
 export SLKLDFLAGS=<b>""</b>
@@ -618,7 +619,7 @@ export SYSROOT_REPO=<span class="comment">/path_to_[Slackware_arm_current/Slarm6
 </code>
 <span class="dastx">##</span> ldconfig is not going to be used during arm packages installaion because it's an x86 binary, nor is /etc/ld.so.conf going to be updated, so use LD_LIBRARY_PATH to find libtqt-mt.so.3 during the build.
 <span class="dastx">##</span> And add the location of the libstdc++, libssp etc. libs from the cross compiler.
-<code class="thtwo">export LD_LIBRARY_PATH=$SYSROOT$TQTDIR/lib:$XGCC_DIR/$HOST/lib$LIBDIRSUFFIX
+<code class="thtwo">export LD_LIBRARY_PATH=$SYSROOT$TQTDIR/lib$LIBDIRSUFFIX:$XGCC_DIR/$HOST/lib$LIBDIRSUFFIX
 </code>
 <span class="dastx">##</span> The arm libs and headers needed for cross compiling need to be installed in SYSROOT.
 <span class="dastx">##</span> They can be [1] directly installed to $SYSROOT if the cross compiler is to be a permanent addition to the system, otherwise [2] installed to a directory [$SYSROOT_REPO] which is bind-mounted to $SYSROOT:
@@ -761,7 +762,7 @@ export PATH=$XGCC_DIR/bin:$XGCC_DIR/$HOST/bin:/usr/local/sbin:/usr/sbin:/sbin:/u
 </code>
 <span class="dastx">##</span> <b>Set up pkg-config</b> to prefix -I and -L paths in *.pc files with $SYSROOT.
 <span class="dastx">##</span> This works where the host libs and headers <b>are</b> in $SYSROOT &hellip;
-<span class="dastx">##</span> But TDE doesn't install to SYSROOT, its .pc files might be in, say, /opt/trinity/lib/pkgconfig, with the result that TDE includes and libs can't be found.
+<span class="dastx">##</span> But TDE doesn't install to SYSROOT, its .pc files might be in, say, /opt/tde/lib64/pkgconfig, with the result that TDE includes and libs can't be found.
 <span class="dastx">##</span> If INSTALL_TDE=/usr, TDE would also have to be *installed* to SYSROOT - linking wouldn't work because that would pull the build system libs and headers into SYSROOT, as would bind mounting it.
 <span class="dastx">##</span> So my work-around for this is to install TDE to both / and $SYSROOT so that the TDE binaries will be found in $INSTALL_TDE and pkg-config will locate the headers and libs in $SYSROOT$INSTALL_TDE.
 <code class="thtwo">export PKG_CONFIG_PATH=
@@ -808,11 +809,18 @@ makepkg --linkadd y --chown n $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 ltoolupdate_fn ()
 {
 {
-<span class="dastx">##</span> look in SYSROOT for headers and libs
-sed -i "s|/usr/include|$SYSROOT&amp;|g" admin/acinclude.m4.in
-sed -i "s|/usr/lib|$SYSROOT/usr/lib$LIBDIRSUFFIX|g" admin/acinclude.m4.in
+<span class="dastx">##</span> look in SYSROOT for headers and libs, and
+<span class="dastx">##</span> edit hard coded tqt directory for tqt3/tqtinterface installed to TQTDIR [!= /usr]
+sed -i "s|/usr/include/tqt\"|$SYSROOT$TQTDIR/include/tqt\"|" admin/acinclude.m4.in
+sed -i "s|/usr/include/tqt3|$SYSROOT$TQTDIR/include/tqt|" admin/acinclude.m4.in
+sed -i "s|/usr/lib/tqt3|$SYSROOT$TQTDIR|" admin/acinclude.m4.in
+<span class="dastx">##</span> $LIBDIRSUFFIX isn't required as it's built-in as ${tdelibsuff} in acinclude.m4.in
+sed -i "s|/usr/lib|$SYSROOT&amp;|g" admin/acinclude.m4.in
 <span class="dastx">##</span> correct the variable name in error message
 sed -i "s|variable UIC to|variable UIC_PATH to|" admin/acinclude.m4.in
+
+<span class="dastx">##</span> edit hard coded plugins installation directories - could be 'tde'
+sed -i "s|trinity|$PLUGIN_INSTALL_DIR|g" admin/acinclude.m4.in
 
 <span class="dastx">##</span> include updating config.{guess,sub} for libart-lgpl and misc builds
 [[ -d admin ]] &amp;&amp; ADMIN=admin/ || ADMIN=""
@@ -840,6 +848,21 @@ echo "  set(CMAKE_SYSTEM_NAME Linux)
   set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 " > cmake-toolchain.cmake
 }
+
+<span class="dastx">##</span> paths in doinst.sh should be relative to allow for installation to ROOT != "/"
+doinst_sh_fn ()
+{
+echo "
+# Update the desktop database:
+/usr/bin/update-desktop-database .$INSTALL_TDE/share/applications
+
+# Update hicolor theme cache:
+/usr/bin/gtk-update-icon-cache -f -t .$INSTALL_TDE/share/icons/hicolor
+
+# Update the mime database:
+/usr/bin/update-mime-database -Vn usr/share/mime
+" >> $PKG/install/doinst.sh
+}
 </code></code>
 <span class="tabs"><a href="#close_Set_variables">close</a></span>
 </div>
@@ -864,11 +887,11 @@ ROOT=/tmp/x86/ installpkg tqt3-$TDE_VERSION-x86_64-*.txz tqtinterface-$TDE_VERSI
 </code>
 <span class="dastx">##</span> Copy tqmoc, and meinproc and its dependent libraries, to a convenient location, $SYSROOT/x86
 <code class="thtwo">cd $SYSROOT/x86
-cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-$TDE_VERSION/bin/tqmoc .
+cp -a /tmp/x86$INSTALL_TDE_x86/bin/tqmoc .
 cp -a /tmp/x86$INSTALL_TDE_x86/bin/meinproc .
 cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/lib{DCOP,dbus-1-tqt,tde{core,fx,io,su,ui,walletclient}}.so* .
-cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/tqt3-$TDE_VERSION/lib/libtqt-mt.so* .
-cp -a /tmp/x86/usr/lib$LIBDIRSUFFIX_x86/lib{tqt,art_lgpl_2}.so* .
+cp -a /tmp/x86$INSTALL_TDE_x86/lib$LIBDIRSUFFIX_x86/lib{tqt,tqt-mt}.so* .
+cp -a /tmp/x86/usr/lib$LIBDIRSUFFIX_x86/libart_lgpl_2.so* .
 
 rm -rf /tmp/x86*
 </code>
@@ -924,7 +947,7 @@ mv mkspecs/linux-g++ ../
 rm -rf mkspecs/*
 mv ../linux-g++ mkspecs/
 </code>
-<span class="dastx">##</span> RPATH is to be set as $ORIGIN/../lib$LIBDIRSUFFIX, so don't need absolute libs directory built in -
+<span class="dastx">##</span> RPATH is to be set as $ORIGIN/../lib, so don't need absolute libs directory built in -
 <span class="dastx">##</span> Allow setting CC/CXX for linux-g++/qmake.conf -
 <span class="dastx">##</span> Set correct paths for includes and libs -
 <code class="thtwo">echo $'--- mkspecs/linux-g++/qmake.conf
@@ -989,12 +1012,19 @@ patch -p0
 done
 </code>
 <span class="dastx">##</span> Set -platform to arm so that tqmoc is built as an arm binary for installation on RPi3.
-<code class="thtwo">echo "yes" | CFLAGS="$SLKCFLAGS" CXXFLAGS="$SLKCFLAGS" \
+<span class="dastx">##</span> Set -rpath so that libtqt-mt.so.3 can be found during the build
+<code class="thtwo">echo "yes" | \
  ./configure \
  -platform linux-arm-g++ \
  -xplatform linux-arm-g++ \
  -no-exceptions \
- -prefix $TQTDIR-$VERSION \
+ -prefix $TQTDIR \
+ -libdir $TQTDIR/lib$LIBDIRSUFFIX \
+ -bindir $TQTDIR/bin \
+ -headerdir $TQTDIR/include/tqt \
+ -plugindir $TQTDIR/lib$LIBDIRSUFFIX/tqt/plugins \
+ -datadir $TQTDIR/lib$LIBDIRSUFFIX/tqt \
+ -translationdir $TQTDIR/share/tqt/translations \
  -release \
  -verbose \
  -I$SYSROOT/usr/include \
@@ -1022,144 +1052,92 @@ done
  -plugin-style-sgi \
  -plugin-style-windows \
  -fast \
- -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib$LIBDIRSUFFIX\'
+ -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib\'
 </code>
 <span class="dastx">##</span> Don't build tutorial and examples which won't be installed because the release version is being built
-<span class="dastx">##</span> Build in a sub-shell to temporarily add the path to libtqt-mt.so.3
-<code class="thtwo">(LD_LIBRARY_PATH=$TMP/tmp-$PRGNAM/$PRGNAM-*$VERSION/lib:$LD_LIBRARY_PATH \
-make $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools)
+<code class="thtwo">make $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools
 make install INSTALL_ROOT=$PKG
 </code>
 <code class="green"><span class="dastx">##</span> Remove some more stuff that's not needed for TDE build and run-time support
 <span class="dastx">##</span> which I haven't yet figured out how to avoid building in the first place
 
 <span class="dastx">##</span> binaries
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqtmergetr
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqtcreatecw
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqtconfig
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqm2ts
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlupdate
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlrelease
-#rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqlinguist
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqembed
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqdesigner
-#rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/tqassistant
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/msg2tqm
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/bin/maketqpf
+(cd $PKG$INSTALL_TDE/bin/
+rm tqtmergetr
+rm tqm2ts
+rm tqlupdate
+rm tqembed
+rm msg2tqm
+rm maketqpf
+rm tqtcreatecw
+rm tqlrelease
+rm tqdesigner)
 
 <span class="dastx">##</span> libraries
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqteditor*
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqtdesignercore*
-rm $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqassistantclient*
+(cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/
+rm libtqteditor*
+rm libtqassistantclient*)
 </code>
 <span class="dastx">##</span> remove sysroot path from RPi3 package
-<code class="thtwo">sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/libtqt-mt.la
-sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/lib/pkgconfig/tqt-mt.pc
+<code class="thtwo">sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/libtqt-mt.la
+sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig/tqt-mt.pc
 </code>
 <span class="dastx">##</span> move mkspecs/linux-arm-g++ to the TDE installation directory - it isn't needed for the RPi3 package, but is needed for building tqca-tls
-<code class="thtwo">(cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/mkspecs/
-mkdir -p $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/mkspecs
-mv linux-arm-g++ $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/mkspecs
+<code class="thtwo">(cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/
+mkdir -p $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs
+mv linux-arm-g++ $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs
 ln -sf linux-g++ default)
-</code>
-<span class="dastx">##</span> Link the shared libraries
-<code class="thtwo">( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX
-  for file in $PRGNAM-$VERSION/lib/*.so* ; do
-    ln -sf $file .
-  done
-)
 </code>
 <code class="thtwo">mkdir -p $PKG/etc/profile.d
 
-echo $"#!""/bin/sh
-# Environment variables for the Qt package.
-#
-# It's best to use the generic directory to avoid
-# compiling in a version-containing path:
-if [ -d \$TQTDIR ]; then
-  QTDIR=\$TQTDIR
-else
-  # Find the newest Qt directory and set \$QTDIR to that:
-  for qtd in \$TQTDIR-* ; do
-    if [ -d \$qtd ]; then
-      QTDIR=\$qtd
-    fi
-  done
-fi
-export QTDIR" > $PKG/etc/profile.d/$PRGNAM.sh
-chmod 755 $PKG/etc/profile.d/*
+echo '#!'"/bin/sh
+# Environment path variable for the tQt package.
+export QTDIR=$TQTDIR
+" > $PKG/etc/profile.d/tqt3.sh
+
+chmod 755 $PKG/etc/profile.d/tqt3.sh
 </code>
 <code class="thtwo">strip_fn
 </code>
-<code class="thtwo"># Put a ton of links to more "normal" places.
-mkdir -p $PKG$INSTALL_TDE/bin
-( cd $PKG$INSTALL_TDE/bin
-  ln -sf ../lib$LIBDIRSUFFIX/$PRGNAM-$VERSION/bin/* .
-)
-
-mkdir -p $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
-( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
-  ln -sf ../tqt3-$VERSION/lib/pkgconfig/tqt-mt.pc .
-)
-
-# Symlink all of it:
-( cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX ; ln -sf $PRGNAM-$VERSION $PRGNAM)
-</code>
 <code class="thtwo">mkdir_install_fn
 </code>
-<code class="thtwo">[[ $PREPEND != yes ]] &amp;&amp; \
+<code class="thtwo"># Add this to the doinst.sh:
 cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Add TQt library directories to /etc/ld.so.conf:
-if ! grep $INSTALL_TDE/lib$LIBDIRSUFFIX /etc/ld.so.conf 1> /dev/null 2> /dev/null ; then
-  echo "$INSTALL_TDE/lib$LIBDIRSUFFIX" >> /etc/ld.so.conf
-fi
-if ! grep $TQTDIR-$VERSION/lib /etc/ld.so.conf 1> /dev/null 2> /dev/null ; then
-  echo "$TQTDIR-$VERSION/lib" >> /etc/ld.so.conf
-fi
-if [ -x /sbin/ldconfig ]; then
-  /sbin/ldconfig 2> /dev/null
-fi
+# Add TDE library directory:
+[[ \$(cat etc/ld.so.conf|head -n1) != $INSTALL_TDE/lib$LIBDIRSUFFIX ]] &amp;&amp; \
+sed -i "1i $INSTALL_TDE/lib$LIBDIRSUFFIX" etc/ld.so.conf
 
-# Update PKG_CONFIG_PATH:
-if ! grep $INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig /etc/profile.d/pkgconfig.sh
-then
-sed -i "s|pkgconfig$|pkgconfig:$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig|g" /etc/profile.d/pkgconfig.sh
-fi
+# Add TQt library directory:
+[[ \$(cat etc/ld.so.conf|head -n1) != $TQTDIR/lib$LIBDIRSUFFIX ]] &amp;&amp;\
+sed -i "1i $TQTDIR/lib$LIBDIRSUFFIX" etc/ld.so.conf
+
+[[ -x /sbin/ldconfig ]] &amp;&amp; /sbin/ldconfig
 
 EOINS
 
-[[ $PREPEND == yes ]] &amp;&amp; \
 cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Add TQt library directories to /etc/ld.so.conf:
-sed -i "\|$INSTALL_TDE/lib$LIBDIRSUFFIX|d" /etc/ld.so.conf
-sed -i "1i $INSTALL_TDE/lib$LIBDIRSUFFIX" /etc/ld.so.conf
-sed -i "1i $TQTDIR-$VERSION/lib" /etc/ld.so.conf
-if [ -x /sbin/ldconfig ]; then
-  /sbin/ldconfig 2> /dev/null
-fi
+## This could be a rebuild or upgradepkg running installpkg twice,
+## so delete any previous routine
+sed -i '/Update PKG_CONFIG_PATH for TDE/,+11d' etc/profile.d/pkgconfig.sh
 
-# Update PKG_CONFIG_PATH:
-sed -i "s|$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig||g;s|:$||g" /etc/profile.d/pkgconfig.sh
-sed -i "s|PKG_CONFIG_PATH=|PKG_CONFIG_PATH=$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig:|g;s|::|:|g" /etc/profile.d/pkgconfig.sh
+echo '# Update PKG_CONFIG_PATH for TDE:
+## remove duplicated paths:
+PKG_CONFIG_PATH=\$(echo \$PKG_CONFIG_PATH| tr : \\\\n | awk '"'!seen[\\\$0]++'"' | tr \\\\n :|sed '"'s|:\$||'"')
+#
+## add path for INSTALL_TDE ..
+[[ ! \$PKG_CONFIG_PATH == *$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig* ]] &amp;&amp; \\
+PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
+## .. and for TQTDIR if different
+[[ ! \$PKG_CONFIG_PATH == *$TQTDIR/lib$LIBDIRSUFFIX/pkgconfig* ]] &amp;&amp; \\
+PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$TQTDIR/lib$LIBDIRSUFFIX/pkgconfig
+#
+export PKG_CONFIG_PATH' >> etc/profile.d/pkgconfig.sh
 
 EOINS
 </code>
-<code class="thtwo">cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
+<code class="thtwo">doinst_sh_fn
 
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-
-EOINS
-</code>
-<code class="thtwo">makepkg_fn
+makepkg_fn
 
 <span class="dastx">##</span> move ldconfig out of the way - links will be set up by doinst.sh
 mv /sbin/ldconfig /sbin/ldconfig-bak
@@ -1200,29 +1178,29 @@ chown_fn
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
-  cmake \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+cmake \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_PREFIX=$TQTDIR \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DQT_INCLUDE_DIR=$TQTDIR/include \
-    -DQT_LIBRARY_DIR=$TQTDIR/lib \
-    -DQT_BINARY_DIR=$TQTDIR/bin \
-    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
-    -D UIC_EXECUTABLE=$INSTALL_TDE/bin/tquic \
+    -DQT_PREFIX_DIR=$TQTDIR \
+    -DQT_INCLUDE_DIR=$TQTDIR/include/tqt \
+    -DMOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -DQT_VERSION=3 \
+    -DWITH_QT3="OFF" \
+    -DWITH_QT4="OFF" \
+    -Wno-dev \
     ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
 
 <span class="dastx">##</span> edit tqmoc path from package so that when installed on RPi3, the tqmoc path is correct
-sed -i "s|$SYSROOT/x86/tqmoc|$INSTALL_TDE/bin/tqmoc|" $PKG/usr/lib$LIBDIRSUFFIX/pkgconfig/tqt.pc
-sed -i "s|$SYSROOT/x86/tqmoc|$INSTALL_TDE/bin/tqmoc|" $PKG/usr/bin/tmoc
+sed -i "s|$SYSROOT/x86/tqmoc|$INSTALL_TDE/bin/tqmoc|" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig/tqt.pc
+sed -i "s|$SYSROOT/x86/tqmoc|$INSTALL_TDE/bin/tqmoc|" $PKG$INSTALL_TDE/bin/tmoc
 
 strip_fn
 
@@ -1234,7 +1212,7 @@ installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 
 <span class="dastx">##</span> revert tqmoc path in tmoc for cross compiling on the BUILD system
-sed -i "s|$INSTALL_TDE/bin/tqmoc|$SYSROOT/x86/tqmoc|" {,$SYSROOT}/usr/bin/tmoc
+sed -i "s|$INSTALL_TDE/bin/tqmoc|$SYSROOT/x86/tqmoc|" {,$SYSROOT}$INSTALL_TDE/bin/tmoc
 </code></code>
 <span class="tabs"><a href="#close_tqtint">close</a></span>
 </div>
@@ -1266,22 +1244,28 @@ chown_fn
 
 cd_builddir_fn
 
-<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
-    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -D TQT_REPLACE_SCRIPT=$INSTALL_TDE/bin/tqt-replace \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DCMAKE_SKIP_RPATH="OFF" \
-    -DCMAKE_INSTALL_RPATH=$INSTALL_TDE/lib$LIBDIRSUFFIX \
+    -DWITH_ALSA="ON" \
+    -DWITH_AUDIOFILE="ON" \
+    -DWITH_ESOUND="OFF" \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_JACK="OFF" \
+    -DWITH_MAD="ON" \
+    -DWITH_SNDIO="OFF" \
+    -DWITH_VORBIS="ON" \
+    -Wno-dev \
     ..
 
 make $NUMJOBS
@@ -1331,17 +1315,17 @@ cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -Wno-dev \
     ..
 
 make $NUMJOBS
@@ -1388,17 +1372,18 @@ cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -Wno-dev \
     ..
 
 make $NUMJOBS
@@ -1447,13 +1432,17 @@ cd_builddir_fn
 cmake-toolchain_fn
 cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
-    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DMAN_INSTALL_DIR=/usr/man \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DBUILD_DOC="ON" \
+    -Wno-dev \
     ..
 
 make $NUMJOBS
@@ -1495,25 +1484,16 @@ untar_fn
 
 chown_fn
 
-<span class="dastx">##</span> configure can't find the openssl libs, so give it a helping hand
-sed -i 's|flags;|flags + " -lssl -lcrypto ";|' configure
-<span class="dastx">##</span> choose the correct version of openssl
-sed -i 's|if(ret == 0)|// &amp;|' configure
-
-<span class="dastx">##</span> add tqt3 headers path
-sed -i "s|^INCLUDEPATH += .*$|&amp;\nINCLUDEPATH += $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/include|" configure
+<span class="dastx">##</span> add TQt headers directory to configure search list
+sed -i "s|/usr/include/tqt|$TQTDIR/include/tqt|" configure
 
 QMAKESPEC=linux-arm-g++ \
-QTDIR=$INSTALL_TDE \
+QTDIR=$TQTDIR \
+CXXFLAGS="$SLKCFLAGS" \
 ./configure
 
-<span class="dastx">##</span> add tqt3 headers path
-sed -i "s|INCPATH  =.*$|&amp; -I$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt3-$VERSION/include|" Makefile
-
 make $NUMJOBS
-
-mkdir -p $PKG$TQTDIR-$VERSION/plugins/crypto/
-install -m 0755 libtqca-tls.so $PKG$TQTDIR-$VERSION/plugins/crypto/
+make INSTALL_ROOT=$PKG install 
 
 strip_fn
 
@@ -1550,21 +1530,9 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 </code>
-<span class="dastx">##</span> patch to enable tdecmshell to find TDE .desktop file in the event of a duplication in file names - TDE bug 2821
-<code class="thtwo">echo $'--- tdecmshell/main.cpp
-+++ tdecmshell/main.cpp
-@@ -106,2 +106,2 @@
--    if ( module.left( 4 ) != "kde-" &amp;&amp; service->library().isEmpty() )
--        return locateModule( "kde-" + module );
-+    if ( module.left( 4 ) != "tde-" &amp;&amp; service->library().isEmpty() )
-+        return locateModule( "tde-" + module );
-' | while read line
-do
-patch -N -p0
-done || true
-
-<span class="dastx">##</span> further patch to make error message more user friendly
-echo $'--- tdecmshell/main.cpp
+<span class="dastx">##</span> Patch for TDE bug 2821 to make error message more user friendly
+<code class="thtwo">patch -N -p0 &lt;&lt; EOF || true
+--- tdecmshell/main.cpp
 +++ tdecmshell/main.cpp
 @@ -98,0 +99,6 @@
 +
@@ -1574,17 +1542,30 @@ echo $'--- tdecmshell/main.cpp
 +        path.prepend("tde/");
 +
 @@ -101 +107 @@
--        kdWarning(780) << "Could not find module \'" << module << "\'." << endl;
-+        kdError(780) << "Could not find \'" << path << "\'." << endl;
-' | while read line
+-        kdWarning(780) &lt;&lt; "Could not find module '" &lt;&lt; module &lt;&lt; "'." &lt;&lt; endl;
++        kdError(780) &lt;&lt; "Could not find '" &lt;&lt; path &lt;&lt; "'." &lt;&lt; endl;
+EOF
+</code>
+<span class="dastx">##</span> Configuration files are in /etc/tde, and plugins in $INSTALL_TDE/lib$LIBDIRSUFFIX/tde
+<code class="thtwo">for file in \
+tdecore/kstandarddirs.cpp \
+tdecore/kcrash.cpp \
+tdeinit/lnusertemp.c \
+tdeinit/tdeinit.cpp \
+tdeinit/wrapper.c \
+tdelfeditor/tdelfeditor.cpp \
+tdeio/tests/kurifiltertest.cpp \
+tdeio/tests/kmimetypetest.sh.cmake \
+tdeio/tests/jobtest.cpp \
+tdeio/kssl/kopenssl.cc \
+tdeinit/tdestartupconfig.cpp \
+tdecore/tdeconfig_compiler/tests/test9main.cpp
 do
-patch -N -p0
-done || true
+sed -i "s|trinity|$PLUGIN_INSTALL_DIR|g" $file || true
+done
+sed -i "s|\"trinity\"|\"$PLUGIN_INSTALL_DIR\"|"  tdecore/tdeapplication.cpp || true
 </code>
 <code class="thtwo">chown_fn
-
-<span class="dastx">##</span> Check for avahi-tqt
-[[ $(ls $SYSROOT/$INSTALL_TDE/lib$LIBDIRSUFFIX/libavahi-tqt.so.*) ]] &amp;&amp; AVAHI="ON"
 
 cd_builddir_fn
 </code>
@@ -1593,41 +1574,65 @@ cd_builddir_fn
 <span class="dastx">##</span> Additionally, command line '-D HAVE_xxxxx_EXITCODE:STRING=x' option fails with cmake 3.12, so these builds use cmake 3.10
 <code class="thtwo"><span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D HAVE_GOOD_GETADDRINFO_EXITCODE:STRING=0 \
     -D HAVE_OPENPTY_EXITCODE:STRING=0 \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
-    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DCMAKE_SKIP_RPATH="OFF" \
     -DCMAKE_INSTALL_RPATH=$INSTALL_TDE/lib$LIBDIRSUFFIX \
-    -DWITH_CUPS="ON" \
-    -DWITH_SUDO_TDESU_BACKEND="ON" \
-    -DWITH_NETWORK_MANAGER_BACKEND="ON" \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DTDE_MALLOC="OFF" \
+    -DTDE_MALLOC_DEBUG="OFF" \
+    -DTDE_MALLOC_FULL="OFF" \
+    -DWITH_ALSA="ON" \
+    -DWITH_ARTS="ON" \
     -DWITH_ASPELL="OFF" \
     -DWITH_AVAHI=${AVAHI:-"OFF"} \
+    -DWITH_CONSOLEKIT="OFF" \
+    -DWITH_CUPS="ON" \
+    -DWITH_DEVKITPOWER="ON" \
+    -DWITH_ELFICON="OFF" \
+    -DWITH_GAMIN="OFF" \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_HAL="OFF" \
+    -DWITH_HSPELL="OFF" \
+    -DWITH_INOTIFY="ON" \
+    -DWITH_JASPER="OFF" \
+    -DWITH_KDE4_MENU_SUFFIX="ON" \
     -DWITH_LIBART="ON" \
-    -DWITH_OPENEXR="ON" \
+    -DWITH_LIBBFD="OFF" \
+    -DWITH_LIBIDN="OFF" \
+    -DWITH_LOGINDPOWER="ON" \
+    -DWITH_LUA="OFF" \
     -DWITH_LZMA="ON" \
-    -DWITH_XRANDR="ON" \
-    -DWITH_XCOMPOSITE="ON" \
+    -DWITH_MITSHM="OFF" \
+    -DWITH_NETWORK_MANAGER_BACKEND="ON" \
+    -DWITH_OLD_XDG_STD="OFF" \
+    -DWITH_OPENEXR="ON" \
+    -DWITH_PCRE="ON" \
+    -DWITH_SSL="ON" \
+    -DWITH_SUDO_TDESU_BACKEND="ON" \
+    -DWITH_TDEHWLIB="ON" \
+    -DWITH_TDEHWLIB_DAEMONS="ON" \
+    -DWITH_TDEICONLOADER_DEBUG="OFF" \
+    -DWITH_TIFF="ON" \
     -DWITH_UDISKS2="ON" \
     -DWITH_UDISKS="ON" \
-    -DWITH_DEVKITPOWER="ON" \
-    -DWITH_LOGINDPOWER="ON" \
-    -DWITH_KDE4_MENU_SUFFIX="ON" \
+    -DWITH_UPOWER="OFF" \
+    -DWITH_UTEMPTER="OFF" \
+    -DWITH_XCOMPOSITE="ON" \
+    -DWITH_XRANDR="ON" \
     -Wno-dev \
-..
+    ..
 
 <span class="dastx">##</span> Modify paths so that SYSROOT headers and libs are used, to avoid this error:
 <span class="dastx">##</span> error: /usr/include/gnu/stubs.h:7:11: fatal error: gnu/stubs-32.h: No such file or directory
@@ -1645,24 +1650,7 @@ sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/share/cmake/tdelibs.cmake
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-
-# Update the mime database:
-if [ -x usr/bin/update-mime-database ]; then
-  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
-fi
-EOINS
+doinst_sh_fn
 </code>
 <code class="thtwo">makepkg_fn
 
@@ -1770,13 +1758,19 @@ do
 patch -p0
 done
 </code>
+<span class="dastx">##</span> Configuration files are in /etc/tde, and plugins in $INSTALL_TDE/lib$LIBDIRSUFFIX/tde
+<code class="thtwo">sed -i "s|trinity|$PLUGIN_INSTALL_DIR|g" tdm/config.def || true
+sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" tdm/kfrontend/gentdmconf.c || true
+sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" kcontrol/hwmanager/devicepropsdlg.cpp || true
+sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" tdeioslave/trash/testtrash.cpp || true
+</code>
 <code class="thtwo">chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D HAVE_OPENPTY_EXITCODE:STRING=0 \
     -D HAVE_NOGROUP_EXITCODE:STRING=0 \
@@ -1786,43 +1780,108 @@ cmake-toolchain_fn
     -D HTDIG_SEARCH_BINARY=$SYSROOT/var/www/cgi-bin/htsearch \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
-    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
-    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DWITH_OPENEXR="ON" \
-    -DWITH_XCOMPOSITE="ON" \
-    -DWITH_XCURSOR="ON" \
-    -DWITH_SUDO_TDESU_BACKEND="ON" \
-    -DWITH_SUDO_KONSOLE_SUPER_USER_COMMAND="ON" \
-    -DWITH_PAM="OFF" \
-    -DWITH_SHADOW="ON" \
-    -DWITH_XFIXES="ON" \
-    -DWITH_XRANDR="ON" \
-    -DWITH_XRENDER="ON" \
-    -DWITH_OPENGL="ON" \
-    -DWITH_XSCREENSAVER="OFF" \
-    -DWITH_XTEST="ON" \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DWITH_ARTS="ON" \
+    -DWITH_ELFICON="OFF" \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_HAL="OFF" \
+    -DWITH_I8K="OFF" \
+    -DWITH_LDAP="OFF" \
     -DWITH_LIBART="ON" \
+    -DWITH_LIBCONFIG="OFF" \
+    -DWITH_LIBRAW1394="OFF" \
     -DWITH_LIBUSB="OFF" \
-    -DWITH_XDMCP="ON" \
-    -DWITH_XINERAMA="ON" \
-    -D WITH_ARTS="ON" \
+    -DWITH_OPENEXR="ON" \
+    -DWITH_OPENGL="ON" \
+    -DWITH_PAM="OFF" \
+    -DWITH_PCRE="ON" \
+    -DWITH_SAMBA="OFF" \
+    -DWITH_SASL="OFF" \
+    -DWITH_SENSORS="OFF" \
+    -DWITH_SHADOW="ON" \
+    -DWITH_SUDO_KONSOLE_SUPER_USER_COMMAND="ON" \
+    -DWITH_SUDO_TDESU_BACKEND="ON" \
     -DWITH_TDEHWLIB="ON" \
     -DWITH_UPOWER="ON" \
-    -DWITH_PCRE="ON" \
-    -DBUILD_ALL="ON" \
+    -DWITH_XCOMPOSITE="ON" \
+    -DWITH_XCURSOR="ON" \
+    -DWITH_XDMCP="ON" \
+    -DWITH_XFIXES="ON" \
+    -DWITH_XINERAMA="ON" \
+    -DWITH_XRANDR="ON" \
+    -DWITH_XRENDER="ON" \
+    -DWITH_XSCREENSAVER="OFF" \
+    -DWITH_XTEST="ON" \
+    -DBUILD_APPLNK="ON" \
+    -DBUILD_CRASHTEST="ON" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_DRKONQI="ON" \
+    -DBUILD_KAPPFINDER="ON" \
+    -DBUILD_KATE="ON" \
+    -DBUILD_KCHECKPASS="ON" \
+    -DBUILD_KCMINIT="ON" \
+    -DBUILD_KCONTROL="ON" \
+    -DBUILD_KDCOP="ON" \
+    -DBUILD_KDESKTOP="ON" \
+    -DBUILD_KDIALOG="ON" \
+    -DBUILD_KFIND="ON" \
+    -DBUILD_KHELPCENTER="ON" \
+    -DBUILD_KHOTKEYS="ON" \
+    -DBUILD_KICKER="ON" \
+    -DBUILD_KLIPPER="ON" \
+    -DBUILD_KMENUEDIT="ON" \
+    -DBUILD_KNETATTACH="ON" \
+    -DBUILD_KONQUEROR="ON" \
+    -DBUILD_KONSOLE="ON" \
+    -DBUILD_KPAGER="ON" \
+    -DBUILD_KPERSONALIZER="ON" \
+    -DBUILD_KREADCONFIG="ON" \
+    -DBUILD_KROOTBACKING="ON" \
+    -DBUILD_KSMSERVER="ON" \
+    -DBUILD_KSPLASHML="ON" \
+    -DBUILD_KSTART="ON" \
+    -DBUILD_KSYSGUARD="ON" \
+    -DBUILD_KSYSTRAYCMD="ON" \
+    -DBUILD_KTIP="ON" \
+    -DBUILD_KXKB="ON" \
+    -DBUILD_L10N="ON" \
+    -DBUILD_LIBKONQ="ON" \
+    -DBUILD_NSPLUGINS="ON" \
+    -DBUILD_PICS="ON" \
+    -DBUILD_PROFILE_SHUTDOWN="OFF" \
+    -DBUILD_STARTTDE="ON" \
+    -DBUILD_TDEDEBUGDIALOG="ON" \
+    -DBUILD_TDEEJECT="ON" \
+    -DBUILD_TDEINIT="ON" \
+    -DBUILD_TDEIOSLAVES="ON" \
+    -DBUILD_TDEKBDLEDSYNC="ON" \
+    -DBUILD_TDEPASSWD="ON" \
+    -DBUILD_TDEPRINT="ON" \
+    -DBUILD_TDESCREENSAVER="ON" \
+    -DBUILD_TDESU="ON" \
+    -DBUILD_TDM="ON" \
+    -DBUILD_TQT3INTEGRATION="ON" \
+    -DBUILD_TSAK="ON" \
+    -DBUILD_TWIN="ON" \
     -Wno-dev \
     ..
 
+<span class="dastx">##</span> The linker has decided it can't find some libs to build kicker even though they've been built.
+<span class="dastx">##</span> Editing kicker.dir/link.txt and rerunning make works:
+make $NUMJOBS || \
+[[ ! -e ./kicker/kicker/kicker ]] &amp;&amp; {
+sed -i 's|^.*$|&amp; ../../libkonq/libkonq.so.4 ./interfaces/libkickoffsearch_interfaces.so.0|' ./kicker/kicker/CMakeFiles/kicker.dir/link.txt  &amp;&amp; \
 make $NUMJOBS
+}
+
 make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove sysroot path from package
@@ -1866,20 +1925,32 @@ chmod 755 $PKG/etc/X11/xinit/xinitrc.tde
 ln -sf xinitrc.tde xinitrc)
 </code>
 <code class="thtwo">mkdir -p $PKG/etc/profile.d
-echo $"#!""/bin/sh
+echo '#!'"/bin/sh
 # TDE additions:
-TDEDIR=$INSTALL_TDE
-export TDEDIR
+export TDEDIR=$INSTALL_TDE
+
+# upgradepkg runs installpkg twice, so test for the second run:
+[[ \"\$XDG_CONFIG_DIRS\" != *$SYS_CNF_DIR/xdg* ]] &amp;&amp; {
 if [ ! \"\$XDG_CONFIG_DIRS\" = \"\" ]; then
-  XDG_CONFIG_DIRS=\$XDG_CONFIG_DIRS:$SYS_CNF_DIR/xdg
+  export XDG_CONFIG_DIRS=\$XDG_CONFIG_DIRS:$SYS_CNF_DIR/xdg
 else
-  XDG_CONFIG_DIRS=/etc/xdg:$SYS_CNF_DIR/xdg
+  export XDG_CONFIG_DIRS=/etc/xdg:$SYS_CNF_DIR/xdg
 fi
-export XDG_CONFIG_DIRS
+}
+
+## Re: https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html
+## If XDG_DATA_DIRS is null or unset, the default is /usr/local/share:/usr/share
+[[ \$XDG_DATA_DIRS == \"\" ]] &amp;&amp; \\
+export XDG_DATA_DIRS=/usr/local/share:/usr/share:$INSTALL_TDE/share || {
+[[ \$XDG_DATA_DIRS != *$INSTALL_TDE/share* ]] &amp;&amp; \\
+export XDG_DATA_DIRS=\$XDG_DATA_DIRS:$INSTALL_TDE/share
+}
 " > $PKG/etc/profile.d/tde.sh
+
 chmod 755 $PKG/etc/profile.d/tde.sh
 </code>
 <code class="thtwo"># Add some configuration files / scripts needed by TDE.
+mkdir -p $PKG$SYS_CNF_DIR
 mv $PKG$INSTALL_TDE/share/config/tdm $PKG$SYS_CNF_DIR/tdm
 ( cd $PKG$INSTALL_TDE/share/config ; ln -sf $SYS_CNF_DIR/tdm tdm )
 
@@ -2004,9 +2075,8 @@ exec xmessage -center -buttons OK:0 -default OK \"Sorry, cannot execute \$sessio
 " > $PKG$SYS_CNF_DIR/tdm/Xsession
 </code>
 <code class="thtwo">mv $PKG$SYS_CNF_DIR/tdm/backgroundrc $PKG$SYS_CNF_DIR/tdm/backgroundrc.new
-if [[ -r $PKG$SYS_CNF_DIR/tdm/README ]]; then
-sed -i "s|$PKG$SYS_CNF_DIR/tdm|$SYS_CNF_DIR/tdm|" $PKG$SYS_CNF_DIR/tdm/README
-fi
+[[ -r $PKG$SYS_CNF_DIR/tdm/README ]] &amp;&amp; \
+sed -i "s|$TMP_BUILD/package-tdebase$SYS_CNF_DIR/tdm|$SYS_CNF_DIR/tdm|" $PKG$SYS_CNF_DIR/tdm/README
 </code>
 <code class="thtwo">mkdir_install_fn
 
@@ -2075,6 +2145,13 @@ sed -i 's|source /etc/profile.d/mc.sh|#source /etc/profile.d/mc.sh|' \$HOME/.bas
 <span class="dastx">##</span> set default runlevel to 4 for tdm
 sed -i 's|id:[1-5]|id:4|' etc/inittab
 " > $PKG/install/doinst.sh
+
+<span class="dastx">##</span> set TDEHOME and TDEROOTHOME variables - defaults ~/.trinity and /root/.trinity
+echo "# upgradepkg runs installpkg twice, so firstly remove any previous TDE*HOME entries
+sed -i '/TDE.*HOME/d' /etc/profile
+echo 'export TDEHOME=~/.tde' >> /etc/profile
+echo 'export TDEROOTHOME=/root/.tde' >> /etc/profile
+" >> $PKG/install/doinst.sh
 </code>
 <code class="thtwo">makepkg_fn
 
@@ -2083,7 +2160,6 @@ ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 
 <span class="dastx">##</span> prefix paths with SYSROOT for build.make => link.txt dependencies for cmake builds for consistency with pkg-config paths
 sed -i "s|\"$INSTALL_TDE|\"$SYSROOT$INSTALL_TDE|g" {,$SYSROOT}$INSTALL_TDE/share/cmake/*.cmake
-
 </code></code>
 Build times
 = 19:59 on x86_64 for x86_64
@@ -2117,40 +2193,60 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
+<span class="dastx">##</span> enable 'ar' compression in Compress As menu
+patch -N -p0 &lt;&lt; EOF || true
+--- konq-plugins/arkplugin/arkplugin.cpp
++++ konq-plugins/arkplugin/arkplugin.cpp
+@@ -347 +347 @@
+-    if ( !TDEStandardDirs::findExe( "ar" ).isNull() &amp;&amp; m_conf->readBoolEntry( "UseAr", false ) )
++    if ( !TDEStandardDirs::findExe( "ar" ).isNull() &amp;&amp; m_conf->readBoolEntry( "UseAr", true ) )
+EOF
+
 chown_fn
 
 <span class="dastx">##</span> check for libatlantic [tdegames]
 [[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libatlantic.so.*) ]] &amp;&amp; ATLANTIKDESIGNER="ON"
 
 <span class="dastx">##</span> check for kaddressbook in tdepim
-[[ $(ls $SYSROOT$INSTALL_TDE/share/cmake/kaddressbook.cmake) ]] &amp;&amp; KADDRESSBOOK_PLUGINS="ON"
+[[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libkaddressbook.so*) ]] &amp;&amp; KADDRESSBOOK_PLUGINS="ON"
 
 <span class="dastx">##</span> check for tdemultimedia
-[[ $(ls $SYSROOT$INSTALL_TDE/include/arts/artsmodules.h) ]] &amp;&amp; NOATUN_PLUGINS="ON"
+[[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libnoatun.so*) ]] &amp;&amp; NOATUN_PLUGINS="ON"
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
-    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
-    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DWITH_ALL_OPTIONS="ON" \
-    -DBUILD_ALL="ON" \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DWITH_ARTS="ON" \
+    -DWITH_SDL="ON" \
+    -DWITH_BERKELEY_DB="ON" \
+    -DWITH_XMMS="OFF" \
+    -DWITH_TEST="OFF" \
+    -DBUILD_DOC="ON" \
     -DBUILD_ATLANTIKDESIGNER=${ATLANTIKDESIGNER:-"OFF"} \
     -DBUILD_KADDRESSBOOK_PLUGINS=${KADDRESSBOOK_PLUGINS:-"OFF"} \
     -DBUILD_NOATUN_PLUGINS=${NOATUN_PLUGINS:-"OFF"} \
+    -DBUILD_KATE_PLUGINS="ON" \
+    -DBUILD_KICKER_APPLETS="ON" \
+    -DBUILD_KNEWSTICKER_SCRIPTS="ON" \
+    -DBUILD_KONQ_PLUGINS="ON" \
+    -DBUILD_KSIG="ON" \
+    -DBUILD_RENAMEDLG_PLUGINS="ON" \
+    -DBUILD_TDEFILE_PLUGINS="ON" \
+    -DBUILD_TUTORIALS="OFF" \
     -Wno-dev \
     ..
 
@@ -2161,25 +2257,7 @@ strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-
-# Update the mime database:
-if [ -x usr/bin/update-mime-database ]; then
-  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
-fi
-
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
@@ -2214,32 +2292,59 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
+<span class="dastx">##</span> set installation directory for superkaramba.desktop file
+sed -i 's|DESTINATION ${APPS_INSTALL_DIR}/Utilities|DESTINATION ${XDG_APPS_INSTALL_DIR}|' superkaramba/src/CMakeLists.txt
+
 chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
-    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
-    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_DPMS="ON" \
     -DWITH_XSCREENSAVER="OFF" \
     -DWITH_SENSORS="ON" \
     -DWITH_SNMP="OFF" \
-    -DBUILD_ALL="ON" \
+    -DWITH_ASUS="OFF" \
+    -DWITH_POWERBOOK="OFF" \
+    -DWITH_POWERBOOK2="OFF" \
+    -DWITH_VAIO="OFF" \
+    -DWITH_THINKPAD="OFF" \
+    -DWITH_I8K="OFF" \
+    -DWITH_XMMS="OFF" \
+    -DWITH_TDENEWSTUFF="OFF" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_ARK="ON" \
+    -DBUILD_CHARSELECTAPPLET="ON" \
+    -DBUILD_KCALC="ON" \
+    -DBUILD_KCHARSELECT="ON" \
+    -DBUILD_TDELIRC="ON" \
+    -DBUILD_TDESSH="ON" \
+    -DBUILD_KDF="ON" \
+    -DBUILD_KEDIT="ON" \
+    -DBUILD_KFLOPPY="ON" \
+    -DBUILD_KGPG="ON" \
+    -DBUILD_KHEXEDIT="ON" \
+    -DBUILD_KJOTS="ON" \
+    -DBUILD_KLAPTOPDAEMON="ON" \
+    -DBUILD_KMILO="ON" \
+    -DBUILD_KREGEXPEDITOR="ON" \
+    -DBUILD_KSIM="ON" \
+    -DBUILD_KTIMER="ON" \
+    -DBUILD_TDEWALLET="ON" \
+    -DBUILD_SUPERKARAMBA="ON" \
     -Wno-dev \
     ..
 
@@ -2250,24 +2355,7 @@ strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-
-# Update the mime database:
-if [ -x usr/bin/update-mime-database ]; then
-  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
-fi
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
@@ -2309,24 +2397,31 @@ cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
-    -DCMAKE_C_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS:STRING=$SLKCFLAGS \
-    -DCMAKE_C_FLAGS_RELEASE:STRING=$SLKCFLAGS \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING=$SLKCFLAGS \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
-    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_ARTS="ON" \
     -DWITH_XSCREENSAVER="OFF" \
-    -DBUILD_ALL="ON" \
+    -DWITH_LIBART="ON" \
+    -DWITH_OPENGL="ON" \
+    -DBUILD_EMOTICONS="ON" \
+    -DBUILD_ICEWM_THEMES="ON" \
+    -DBUILD_ICON_THEMES="ON" \
+    -DBUILD_TDESCREENSAVER="ON" \
+    -DBUILD_TWIN_STYLES="ON" \
+    -DBUILD_KWORLDCLOCK="ON" \
+    -DBUILD_SOUNDS="ON" \
+    -DBUILD_STYLES="ON" \
+    -DBUILD_WALLPAPERS="ON" \
     -Wno-dev \
     ..
 
@@ -2337,24 +2432,7 @@ strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-
-# Update the mime database:
-if [ -x usr/bin/update-mime-database ]; then
-  chroot . /usr/bin/update-mime-database $INSTALL_TDE/share/mime >/dev/null 2>&amp;1
-fi
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
@@ -2910,25 +2988,24 @@ cd_builddir_fn
 <span class="dastx">##</span> If imlib is installed, include kuickshow:
 [[ $(ls $SYSROOT/usr/lib$LIBDIRSUFFIX/libImlib.so.*) ]] &amp;&amp; KUICKSHOW=ON
 cmake-toolchain_fn
-  cmake \
+cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
-    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_T1LIB="OFF" \
+    -DWITH_PAPER="OFF" \
     -DWITH_TIFF="OFF" \
     -DWITH_OPENEXR="OFF" \
     -DWITH_PDF="ON" \
-    -DBUILD_ALL="ON" \
+    -DBUILD_DOC="ON" \
     -DBUILD_TDEFILE_PLUGINS="ON" \
     -DBUILD_KUICKSHOW=${KUICKSHOW:-OFF} \
     -DBUILD_KPDF="ON" \
@@ -2936,6 +3013,20 @@ cmake-toolchain_fn
     -DBUILD_KSVG="OFF" \
     -DBUILD_LIBKSCAN="OFF" \
     -DBUILD_KOOKA="OFF" \
+    -DBUILD_KCOLOREDIT="ON" \
+    -DBUILD_KDVI="ON" \
+    -DBUILD_KFAX="ON" \
+    -DBUILD_KFAXVIEW="ON" \
+    -DBUILD_KGAMMA="ON" \
+    -DBUILD_KGHOSTVIEW="ON" \
+    -DBUILD_TDEICONEDIT="ON" \
+    -DBUILD_KMRML="ON" \
+    -DBUILD_KOLOURPAINT="ON" \
+    -DBUILD_KPOVMODELER="ON" \
+    -DBUILD_KRULER="ON" \
+    -DBUILD_KSNAPSHOT="ON" \
+    -DBUILD_KVIEW="ON" \
+    -DBUILD_KVIEWSHELL="ON" \
     -Wno-dev \
     ..
 
@@ -2946,19 +3037,7 @@ strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
@@ -2993,55 +3072,46 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
-ltoolupdate_fn
-
 chown_fn
 
 cd_builddir_fn
 
-<span class="dastx">##</span> rm -rf rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
-LDFLAGS="$SLKLDFLAGS" \
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
-MOC=$SYSROOT/x86/tqmoc \
-MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
-../configure \
-   --prefix=$INSTALL_TDE \
-   --sysconfdir=$SYS_CNF_DIR \
-   --mandir=$INSTALL_TDE/man \
-   --disable-rpath \
-   --disable-debug \
-   --enable-closure \
-   --with-pam=no \
-   --enable-libsuffix=$LIBDIRSUFFIX \
-   --host=$HOST
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
+cmake-toolchain_fn
+cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_KCRON="ON" \
+    -DBUILD_KDAT="ON" \
+    -DBUILD_KNETWORKCONF="ON" \
+    -DBUILD_KSYSV="ON" \
+    -DBUILD_KUSER="ON" \
+    -DBUILD_LILO_CONFIG="ON" \
+    -DBUILD_KPACKAGE="ON" \
+    -DBUILD_TDEFILE_PLUGINS="ON" \
+    -DBUILD_SECPOLICY="OFF" \
+    -Wno-dev \
+    ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
-
-<span class="dastx">##</span> remove XGCC and SYSROOT paths in package
-sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-<span class="dastx">##</span> tidy up some anomalies
-sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t $INSTALL_TDE/share/icons/hicolor 1> /dev/null 2> /dev/null
-  fi
-fi
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
@@ -3077,47 +3147,39 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
-ltoolupdate_fn
-
 chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
-LDFLAGS="$SLKLDFLAGS" \
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
-MOC=$SYSROOT/x86/tqmoc \
-MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
-../configure \
-   --prefix=$INSTALL_TDE \
-   --disable-debug \
-   --sysconfdir=$SYS_CNF_DIR \
-   --mandir=$INSTALL_TDE/man \
-   --disable-rpath \
-   --enable-closure \
-   --enable-libsuffix=$LIBDIRSUFFIX \
-   --host=$HOST
+<span class="dastx">##</span> all locales and html docs built by default, actually only en_US
+cmake-toolchain_fn
+cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_TRANSLATIONS="ON" \
+    -Wno-dev \
+    ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
-
-<span class="dastx">##</span> remove xgcc paths in package
-sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-<span class="dastx">##</span> tidy up some anomalies
-sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database $INSTALL_TDE/share/applications > /dev/null 2>&amp;1
-fi
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
@@ -3154,48 +3216,45 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
-# rename knemo icons to avoid conflict with those in tdeartwork
+<span class="dastx">##</span> rename knemo icons to avoid conflict with those in tdeartwork
 rename network_ knemo_network_ src/knemod/pics/*png
 sed -i -e 's|network_|knemo_network_|g' src/{knemod/interfaceicon,kcm/configdialog}.cpp
-# widen text area in Tooltips box to avoid text wrapping
-sed -i 's|<tr><td>|<tr><td width=70%>|g' src/knemod/interfacetooltip.cpp
-# patch
+<span class="dastx">##</span> widen text area in Tooltips box to avoid text wrapping
+sed -i 's|&lt;tr>&lt;td>|&lt;tr>&lt;td width=70%>|g' src/knemod/interfacetooltip.cpp
+<span class="dastx">##</span> patch
 sed -i 's|Default Gateway" ), LINK_QUALITY|Default Gateway" ), GATEWAY|' src/knemod/interfacetooltip.cpp
-# set support for additional language(s) as per I18N variable
-# but only for languages available with this package
+<span class="dastx">##</span> set support for additional language(s) as per I18N variable
+<span class="dastx">##</span> but only for languages available with this package
 langs="";for Lang in $I18N;do [[ -d translations/$Lang ]] &amp;&amp; langs="$langs $Lang";done
 sed -i "s|SUBDIRS=.*$|SUBDIRS=$langs|" translations/Makefile.am
-
-ltoolupdate_fn
 
 chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
-LDFLAGS="$SLKLDFLAGS" \
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
-MOC=$SYSROOT/x86/tqmoc \
-MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
-../configure \
-   --prefix=$INSTALL_TDE \
-   --disable-debug \
-   --sysconfdir=$SYS_CNF_DIR \
-   --mandir=$INSTALL_TDE/man \
-   --disable-rpath \
-   --enable-closure \
-   --enable-libsuffix=$LIBDIRSUFFIX \
-   --host=$HOST
+cmake-toolchain_fn
+cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_LIBIW="OFF" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
+    -Wno-dev \
+    ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
-
-<span class="dastx">##</span> remove xgcc paths in package
-sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-<span class="dastx">##</span> tidy up some anomalies
-sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
 
 strip_fn
 
@@ -3252,42 +3311,28 @@ chown_fn
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$SUB_DIR$PRGNAM/build-$PRGNAM/*
-LDFLAGS="$SLKLDFLAGS" \
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
 MOC=$SYSROOT/x86/tqmoc \
 MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
 ../configure \
    --prefix=$INSTALL_TDE \
-   --disable-debug \
-   --sysconfdir=$SYS_CNF_DIR \
    --mandir=$INSTALL_TDE/man \
    --disable-rpath \
-   --enable-closure \
-   --enable-libsuffix=$LIBDIRSUFFIX \
    --host=$HOST
 
 make $NUMJOBS
 make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove xgcc paths in package
-sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
-<span class="dastx">##</span> tidy up some anomalies
-sed -i "s|6464|64|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/trinity/*.la
+sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/t*/*.la
+sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/t*/*.la
 
 strip_fn
 
 mkdir_install_fn
 
-cat &lt;&lt;EOINS >> $PKG/install/doinst.sh
-# Update the desktop database:
-\$(which update-desktop-database) $INSTALL_TDE/share/applications
-
-# Update hicolor theme cache:
-\$(which gtk-update-icon-cache) -f -t $INSTALL_TDE/share/icons/hicolor
-
-EOINS
+doinst_sh_fn
 
 makepkg_fn
 
