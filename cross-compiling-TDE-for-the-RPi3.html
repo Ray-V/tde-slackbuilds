@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.0.9 have been verified for 64-bit arm only].
+[Edit: builds for R14.0.10 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -337,10 +337,7 @@ contrib/download_prerequisites --no-verify
 <code class="thtwo">echo $'--- libsanitizer/asan/asan_linux.cc
 +++ libsanitizer/asan/asan_linux.cc
 @@ -33,0 +34 @@
-+#include &lt;linux/limits.h>' | while read line
-do
-patch -p0
-done
++#include &lt;linux/limits.h>' | patch -p0
 </code>
 <span class="dastx">##</span> <b>Build Binutils</b>
 <span class="dastx">##</span> The cross compiler toolchain is going to be built with defaults for the RPi3 using machine [arch/tune/fpu/float] options
@@ -593,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.9</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.10</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -637,6 +634,9 @@ ln -sf $TDE_SRC/* $SYSROOT/src/</span>
 </code>
 <span class="dastx">##</span> only need qemu-$ARM from the qemu build/installation - just place it somewhere the kernel can find it &hellip;
 <code class="thtwo">mkdir -p $SYSROOT/x86
+<code class="green thtwob"><span class="dastx">##</span> Remove any previously installed files if they are for an older version build
+rm $SYSROOT/x86/*
+</code>
 cp /tmp/qemu-temp/usr/local/bin/qemu-$ARM $SYSROOT/x86
 rm -rf /tmp/qemu*
 </code>
@@ -749,6 +749,8 @@ installpkg l/libwebp-*.txz
 installpkg l/zstd-*.txz
 <span class="dastx">##</span> + for 14.0.9+ builds
 installpkg d/intltool-*.txz
+<span class="dastx">##</span> + for 14.0.10+ builds
+installpkg ap/lm_sensors-*.txz
 
 <span class="dastx">##</span> remove .la files and any links to them - they can cause a problem because the paths are hard-coded to /usr/... and so pick up the build machine libs rather than the libs in SYSROOT
 find $SYSROOT/usr/lib$LIBDIRSUFFIX -type l -name \*.la -exec rename .la .la-bak {} \;
@@ -982,10 +984,7 @@ mv ../linux-g++ mkspecs/
 +QMAKE_LINK_SHLIB<span class="bkslt">\t</span>= $(COMPILER_CXX)
 @@ -58 +58 @@
 -QMAKE_RPATH<span class="bkslt">\t</span><span class="bkslt">\t</span>= -Wl,-rpath,
-+QMAKE_RPATH =' | while read line
-do
-patch -p0
-done
++QMAKE_RPATH =' | patch -p0
 </code>
 <code class="thtwo">chown_fn
 </code>
@@ -1011,10 +1010,7 @@ echo $'--- mkspecs/linux-arm-g++/qmake.conf
 -QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= /usr/include/GL
 -QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib$(LIBDIRSUFFIX)
 +QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/include/GL
-+QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib$(LIBDIRSUFFIX)' | while read line
-do
-patch -p0
-done
++QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib$(LIBDIRSUFFIX)' | patch -p0
 </code>
 <span class="dastx">##</span> Set -platform to arm so that tqmoc is built as an arm binary for installation on RPi3.
 <span class="dastx">##</span> Set -rpath so that libtqt-mt.so.3 can be found during the build
@@ -1571,7 +1567,7 @@ tdelfeditor/tdelfeditor.cpp \
 tdeio/tests/kurifiltertest.cpp \
 tdeio/tests/kmimetypetest.sh.cmake \
 tdeio/tests/jobtest.cpp \
-tdeio/kssl/kopenssl.cc \
+tdeio/kssl/kopenssl.cpp \
 tdeinit/tdestartupconfig.cpp \
 tdecore/tdeconfig_compiler/tests/test9main.cpp
 do
@@ -1630,14 +1626,25 @@ EOF
 
 cd_builddir_fn
 </code>
+<span class="dastx">##</span> Set some paths to required binaries
+<span class="dastx">##</span> /bin/sh: dcopidl2cpp: command not found
+<span class="dastx">##</span> /bin/sh: tdeconfig_compiler: command not found
+<span class="dastx">##</span> /bin/sh: meinproc: command not found
+<code class="thtwo">sed -i "s|dcopidl2cpp|$PWD/dcop/dcopidl2cpp/dcopidl2cpp|" ../CMakeLists.txt
+sed -i "s|tdeconfig_compiler|$PWD/tdecore/tdeconfig_compiler/tdeconfig_compiler|" ../CMakeLists.txt
+<span class="dastx">##</span> Take this opportunity to use the native meinproc
+sed -i "s|meinproc|$INSTALL_TDE/bin/meinproc-x86|" ../CMakeLists.txt
+</code>
 <span class="dastx">##</span> Add exitcodes for try_run tests which produce a cmake error when x-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set
 <span class="dastx">##</span> Set exitcodes to values that a native build would give
 <span class="dastx">##</span> Additionally, command line '-D HAVE_xxxxx_EXITCODE:STRING=x' option fails with cmake 3.12, so these builds use cmake 3.10
+<span class="dastx">##</span> Use native binary intltool-merge for ARCH independent desktop files
 <code class="thtwo"><span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
 cmake-toolchain_fn
 cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -D HAVE_GOOD_GETADDRINFO_EXITCODE:STRING=0 \
     -D HAVE_OPENPTY_EXITCODE:STRING=0 \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
@@ -1666,6 +1673,7 @@ cmake \
     -DWITH_GCC_VISIBILITY="OFF" \
     -DWITH_HAL="OFF" \
     -DWITH_HSPELL="OFF" \
+    -DWITH_IMAGETOPS_BINARY="OFF" \
     -DWITH_INOTIFY="ON" \
     -DWITH_ISPELL="OFF" \
     -DWITH_JASPER="OFF" \
@@ -1701,12 +1709,6 @@ cmake \
 <span class="dastx">##</span> The alternative is to modify FindPkgConfig.cmake to prefix the INCLUDEDIR and LIBDIR results with ${CMAKE_SYSROOT}, but as this issue only surfaces here and that's a system file, let's keep the change local:
 sed -i "s|=/usr/include|=$SYSROOT/usr/include|" CMakeCache.txt
 sed -i "s|=/usr/lib$LIBDIRSUFFIX|=$SYSROOT/usr/lib$LIBDIRSUFFIX|" CMakeCache.txt
-
-<span class="dastx">##</span> Quick fix for:
-<span class="dastx">##</span> /bin/sh: dcopidl2cpp: command not found
-<span class="dastx">##</span> /bin/sh: tdeconfig_compiler: command not found
-<span class="dastx">##</span> /bin/sh: meinproc: command not found
-PATH=$PATH:$PWD/dcop/dcopidl2cpp:$PWD/tdecore/tdeconfig_compiler:$PWD/kdoctools
 
 make $NUMJOBS
 make DESTDIR=$PKG install
@@ -1758,7 +1760,7 @@ untar_fn
 </code>
 <span class="dastx">##</span> picking up the wrong limits.h - MAX_PATH not defined
 <code class="thtwo">sed -i 's|&lt;limits.h>|&amp;\n#include &lt;linux/limits.h>|' kcontrol/krdb/krdb.cpp
-sed -i '20s|^|#include &lt;linux/limits.h>|' kdesktop/lock/lockprocess.cc
+sed -i '20s|^|#include &lt;linux/limits.h>|' kdesktop/lock/lockprocess.cpp
 </code>
 <span class="dastx">##</span> make default tdm screen text clearer against dark background and align login button with clickable area
 <span class="dastx">##</span> edit color="#ffff74" and/or color="#ff0000" for your own choice
@@ -1790,10 +1792,7 @@ sed -i '20s|^|#include &lt;linux/limits.h>|' kdesktop/lock/lockprocess.cc
 -<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>&lt;pos x="435" y="323" anchor="s" />
 +<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>&lt;normal color="#ff0000" font="Sans 11" />
 +<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>&lt;pos x="435" y="260" anchor="s" />
-' | while read line
-do
-patch -p0
-done
+' | patch -p0
 </code>
 <span class="dastx">##</span> enable konqueror filemanagement ViewMode to be set - TDE bug 1963
 <code class="thtwo">echo $'
@@ -1821,10 +1820,7 @@ done
 +++ konqueror/listview/konq_treeview.desktop
 @@ -87,0 +88 @@
 +X-TDE-BrowserView-Built-Into=konqueror
-' | while read line
-do
-patch -p0
-done
+' | patch -p0
 </code>
 <span class="dastx">##</span> Configuration files are in /etc/tde, and plugins in $INSTALL_TDE/lib$LIBDIRSUFFIX/tde
 <code class="thtwo">sed -i "s|trinity|$PLUGIN_INSTALL_DIR|g" tdm/config.def || true
@@ -1868,6 +1864,7 @@ cmake \
     -D HTDIG_SEARCH_BINARY=$SYSROOT/var/www/cgi-bin/htsearch \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -1893,7 +1890,7 @@ cmake \
     -DWITH_PCRE="ON" \
     -DWITH_SAMBA="OFF" \
     -DWITH_SASL="OFF" \
-    -DWITH_SENSORS="OFF" \
+    -DWITH_SENSORS="ON" \
     -DWITH_SHADOW="ON" \
     -DWITH_SUDO_KONSOLE_SUPER_USER_COMMAND="ON" \
     -DWITH_SUDO_TDESU_BACKEND="ON" \
@@ -1956,6 +1953,7 @@ cmake \
     -DBUILD_TDESCREENSAVER="ON" \
     -DBUILD_TDESU="ON" \
     -DBUILD_TDM="ON" \
+    -DBUILD_TDM_SYSTEMD_UNIT_FILE="OFF" \
     -DBUILD_TQT3INTEGRATION="ON" \
     -DBUILD_TSAK="ON" \
     -DBUILD_TWIN="ON" \
@@ -2309,6 +2307,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -2380,6 +2379,10 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
+<span class="dastx">##</span> Set some paths to required binaries
+<span class="dastx">##</span> /bin/sh: makecrc: command not found
+sed -i "s|COMMAND makecrc|COMMAND ./makecrc|" klaptopdaemon/CMakeLists.txt
+
 chown_fn
 
 cd_builddir_fn
@@ -2390,6 +2393,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -2432,10 +2436,6 @@ cmake \
     -DBUILD_SUPERKARAMBA="ON" \
     -Wno-dev \
     ..
-
-<span class="dastx">##</span> Quick fix for:
-<span class="dastx">##</span> /bin/sh: makecrc: command not found
-PATH=$PATH:$PWD/klaptopdaemon
 
 make $NUMJOBS
 make DESTDIR=$PKG install
@@ -2490,6 +2490,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -2498,6 +2499,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DWITH_ALL_INCLUDED_XSCREENSAVERS="OFF" \
     -DWITH_ARTS="ON" \
     -DWITH_XSCREENSAVER="OFF" \
     -DWITH_LIBART="ON" \
@@ -3007,10 +3009,7 @@ untar_fn
 +<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (colptr + ls &lt; sizeof(col))
 @@ -1560,0 +1583 @@
 +      free(line);
-' | while read line
-do
-patch -p0
-done
+' | patch -p0
 </code>
 <code class="thtwo">ltoolupdate_fn
 
@@ -3081,6 +3080,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -3171,6 +3171,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -3247,6 +3248,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -3327,6 +3329,7 @@ cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -3455,885 +3458,181 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 </code>
-These patches are to build Kvkbd to
-&bull; add a LSGT key, which is required for non-US keyboards
-&bull; add a RWIN key
-&bull; support evdev key mapping
-&bull; support dead keys
-&bull; fix num pad keycodes
-&bull; show &amp; and shift characters
-&bull; add 'Lock on screen' feature
-&bull; add i18n support
-&bull; add ColorDialog for user to set keyboard and keys colours
-&bull; add tooltips
-<br><span style="vertical-align:30%">Kvkbd can be run with a different style than the system style, for example <b>kvkbd --style plastik</b>:</span>
+These patches provide Kvkbd build options
+&bull; Use Win keys as modifier keys or for characters set with xmodmap.
+&bull; Use alternative text on the num pad keys.
+&bull; Show small icons on the buttons.
+&bull; Show blank keys where AltGr doesn't produce a character.
+<br><span style="vertical-align:30%">Kvkbd can be run with a different style than the system style, for example <b>kvkbd --style plastik</b> for the basic Greek keyboard:</span>
 <img style="max-width:100%"
 src="data:image/png;base64,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"
 alt="greek keyboard">
-<code class="thtwo"><span class="dastx">##</span> Add a key, LSGT, between 'left shift' and 'z' for non-US keyboards.  
-<span class="dastx">##</span> This duplicates '&lt;' and '>' characters for US keyboards, but otherwise leaves the US keyboard fully functional.
-<span class="dastx">##</span> The key which is normally lower left of Enter on non-US keyboards is above the Enter key.
-<b>echo</b> $'--- src/MainWidget.cpp
+<code class="thtwo"><span class="dastx">##</span> change num-pad keys text
+echo $'--- src/MainWidget.cpp
 +++ src/MainWidget.cpp
-<span class="dastx">#</span>
-<span class="dastx">##</span> add a key[code] to row 4
-@@ -46 +46 @@
--#define R4LEN 7
-+#define R4LEN 8
-<span class="dastx">#</span>
-<span class="dastx">##</span> add keycode 94 key between l-shift and z key
-<span class="dastx">##</span> gb=\|  fr=&lt;>  de=&lt;>|  [us=&lt;>]  etc
-@@ -72,3 +72,3 @@
--<span class="bkslt">\t</span>//TQString k4="zxcvbnm"; //,./";
--<span class="bkslt">\t</span>//TQString k4s="ZXCVBNM";
--<span class="bkslt">\t</span>unsigned int kc4[R4LEN] = {52,53,54,55,56,57,58};//59,60,61};
-+<span class="bkslt">\t</span>//TQString k4="&lt;zxcvbnm"; //,./";
-+<span class="bkslt">\t</span>//TQString k4s=">ZXCVBNM";
-+<span class="bkslt">\t</span>unsigned int kc4[R4LEN] = {94,52,53,54,55,56,57,58};//59,60,61};
-<span class="dastx">#</span>
-<span class="dastx">##</span> reduce width of left shift key
-@@ -249 +249 @@
--<span class="bkslt">\t</span>lshft->resize ( 80,30 );
-+<span class="bkslt">\t</span>lshft->resize ( 45,30 );
-<span class="dastx">#</span>
-<span class="dastx">##</span> remove one key space after left shift
-<span class="dastx">##</span> and fix spacing
-@@ -262 +262 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>v->move ( stx+35+16+35+ ( 35*a ),sty+ ( 4*35 ) );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>v->move ( stx+lshft->width() +5+ ( 35*a ),sty+ ( 4*35 ) );
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> add RWin key
-<b>echo</b> $'--- src/MainWidget.h
-+++ src/MainWidget.h
-@@ -96,2 +96,3 @@
-<span class="bkslt">\t</span>VButton *win;
-+<span class="bkslt">\t</span>VButton *rwin;
-<span class="bkslt">\t</span>VButton *mnu;
---- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -353,2 +354,11 @@
- 
-+<span class="bkslt">\t</span>rwin = new VButton ( this,"" );
-+<span class="bkslt">\t</span>rwin->resize ( 50,30 );
-+<span class="bkslt">\t</span>rwin->move ( ralt->x() +ralt->width() +5, sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>rwin->setText ( "RWin" );
-+<span class="bkslt">\t</span>rwin->setKeyCode ( 134 );
-+<span class="bkslt">\t</span>rwin->setToggleButton ( true );
-+<span class="bkslt">\t</span>mod_keys.append( rwin );
-+<span class="bkslt">\t</span>rwin->res();
-+
- 
-@@ -355,4 +364,4 @@
- <span class="bkslt">\t</span>mnu = new VButton ( this,"" );
--<span class="bkslt">\t</span>mnu->resize ( 45,30 );
--<span class="bkslt">\t</span>mnu->move ( 5+ralt->x() +ralt->width(), sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>mnu->resize ( 50,30 );
-+<span class="bkslt">\t</span>mnu->move ( rwin->x() +rwin->width() +5, sty+ ( 5*35 ) );
- <span class="bkslt">\t</span>mnu->setText ( "Menu" );
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Fix keycodes for evdev mapping:
-<span class="dastx">##</span> Right shift, LWin, AltGr, Menu, Right Ctrl, Num pad divide, Num pad Enter
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -296 +296 @@
--<span class="bkslt">\t</span>rshft->setKeyCode ( 50 );
-+<span class="bkslt">\t</span>rshft->setKeyCode ( 62 );
-@@ -321 +321 @@
--<span class="bkslt">\t</span>win->setKeyCode ( 115 );
-+<span class="bkslt">\t</span>win->setKeyCode ( 133 );
-@@ -349 +349 @@
--<span class="bkslt">\t</span>ralt->setKeyCode ( 113 );
-+<span class="bkslt">\t</span>ralt->setKeyCode ( 108 );
-@@ -368 +368 @@
--<span class="bkslt">\t</span>mnu->setKeyCode ( 117 );
-+<span class="bkslt">\t</span>mnu->setKeyCode ( 135 );
-@@ -379 +379 @@
--<span class="bkslt">\t</span>rctrl->setKeyCode ( 37 );
-+<span class="bkslt">\t</span>rctrl->setKeyCode ( 105 );
-@@ -468 +468 @@
--<span class="bkslt">\t</span>div->setKeyCode(112);
-+<span class="bkslt">\t</span>div->setKeyCode(106);
-@@ -485 +485 @@
--<span class="bkslt">\t</span>ent->setKeyCode(36);
-+<span class="bkslt">\t</span>ent->setKeyCode(104);
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Cosmetic changes:
-<span class="dastx">##</span> Set F4-F5 spacing as per F8-F9
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -97 +97 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>f->move ( stx+esc->width() + ( 35*a ) +20,sty );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>f->move ( stx+esc->width() +30 + ( 35*a ),sty );
-@@ -107 +107 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>f->move ( stx+esc->width() + ( 35*a ) +40+ ( 4*35 ),sty );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>f->move ( stx+esc->width() +30 + ( 4*35 ) +14 + ( 35*a ),sty );
-@@ -118 +118 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>f->move ( stx+esc->width() + ( 35*a ) +45+ ( 8*35 ) +10,sty );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>f->move ( stx+esc->width() +30 + ( 8*35 ) +28 + ( 35*a ),sty );
-<span class="dastx">#</span>
-<span class="dastx">##</span> resize keys for alignment on right side of keyboard
-@@ -139 +139 @@
--<span class="bkslt">\t</span>bksp->resize ( 46,30 );
-+<span class="bkslt">\t</span>bksp->resize ( 48,30 );
-@@ -149 +149 @@
--<span class="bkslt">\t</span>tab->resize ( 47,30 );
-+<span class="bkslt">\t</span>tab->resize ( 48,30 );
-<span class="dastx">##</span> reduce size of Dock image
-@@ -938 +938 @@
--<span class="bkslt">\t</span>resize ( 96,47 );
-+<span class="bkslt">\t</span>resize ( 64,31 );
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Revise positions of keys and reformat code to represent the calculations left-to-right
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -219,3 +219,3 @@
- <span class="bkslt">\t</span>smcl->setKeyCode ( 47 );
--<span class="bkslt">\t</span>smcl->move ( stx+ ( R3LEN *35 ) +caps->width() +5,sty+ ( 3*35 ) );
-+<span class="bkslt">\t</span>smcl->move ( stx+caps->width() +5+ ( R3LEN *35 ) ,sty+ ( 3*35 ) );
- <span class="bkslt">\t</span>//smcl->setText ( ";" );
-@@ -228,3 +228,3 @@
- <span class="bkslt">\t</span>sngq->setKeyCode ( 48 );
--<span class="bkslt">\t</span>sngq->move ( stx+ ( ( R3LEN +1 ) *35 ) +caps->width() +5,sty+ ( 3*35 ) );
-+<span class="bkslt">\t</span>sngq->move ( stx+caps->width() +5+ ( ( R3LEN +1 ) *35 ) ,sty+ ( 3*35 ) );
- <span class="bkslt">\t</span>//sngq->setText ( "\'" );
-@@ -237,3 +237,3 @@
- <span class="bkslt">\t</span>enter->setKeyCode ( 36 );
--<span class="bkslt">\t</span>enter->move ( stx+ ( ( R3LEN +2 ) *35 ) +caps->width() +5,sty+ ( 3*35 ) );
-+<span class="bkslt">\t</span>enter->move ( stx+caps->width() +5+ ( ( R3LEN +2 ) *35 ) ,sty+ ( 3*35 ) );
- <span class="bkslt">\t</span>enter->resize ( 50,30 );
-@@ -269,3 +269,3 @@
- <span class="bkslt">\t</span>sm->setKeyCode ( 59 );
--<span class="bkslt">\t</span>sm->move ( stx+ ( R4LEN *35 ) +lshft->width() +5,sty+ ( 4*35 ) );
-+<span class="bkslt">\t</span>sm->move ( stx+lshft->width() +5+ ( R4LEN *35 ) ,sty+ ( 4*35 ) );
- <span class="bkslt">\t</span>//sm->setText ( "," );
-@@ -278,3 +278,3 @@
- <span class="bkslt">\t</span>gr->setKeyCode ( 60 );
--<span class="bkslt">\t</span>gr->move ( stx+ ( ( R4LEN +1 ) *35 ) +lshft->width() +5,sty+ ( 4*35 ) );
-+<span class="bkslt">\t</span>gr->move ( stx+lshft->width() +5+ ( ( R4LEN +1 ) *35 ) ,sty+ ( 4*35 ) );
- <span class="bkslt">\t</span>//gr->setText ( "." );
-@@ -287,3 +287,3 @@
- <span class="bkslt">\t</span>sl->setKeyCode ( 61 );
--<span class="bkslt">\t</span>sl->move ( stx+ ( ( R4LEN +2 ) *35 ) +lshft->width() +5,sty+ ( 4*35 ) );
-+<span class="bkslt">\t</span>sl->move ( stx+lshft->width() +5+ ( ( R4LEN +2 ) *35 ) ,sty+ ( 4*35 ) );
- <span class="bkslt">\t</span>//sl->setText ( "/" );
-@@ -296,3 +296,3 @@
- <span class="bkslt">\t</span>rshft->setKeyCode ( 62 );
--<span class="bkslt">\t</span>rshft->move ( stx+ ( ( R4LEN +3 ) *35 ) +lshft->width() +5,sty+ ( 4*35 ) );
-+<span class="bkslt">\t</span>rshft->move ( stx+lshft->width() +5+ ( ( R4LEN +3 ) *35 ) ,sty+ ( 4*35 ) );
- <span class="bkslt">\t</span>rshft->resize ( 68,30 );
-@@ -305,3 +305,3 @@
- <span class="bkslt">\t</span>
--
-+<span class="bkslt">\t</span>//ROW 5
- <span class="bkslt">\t</span>lctrl = new VButton ( this,"" );
-@@ -317,5 +317,5 @@
- <span class="bkslt">\t</span>win = new VButton ( this,"" );
--<span class="bkslt">\t</span>win->resize ( 45,30 );
--<span class="bkslt">\t</span>win->move ( 5+lctrl->x() +lctrl->width(), sty+ ( 5*35 ) );
--<span class="bkslt">\t</span>win->setText ( "Win" );
-+<span class="bkslt">\t</span>win->resize ( 50,30 );
-+<span class="bkslt">\t</span>win->move ( lctrl->x() +lctrl->width() +5, sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>win->setText ( "LWin" );
-<span class="bkslt">\t</span>win->setKeyCode ( 133 );
-@@ -328,3 +328,3 @@
- <span class="bkslt">\t</span>lalt->resize ( 45,30 );
--<span class="bkslt">\t</span>lalt->move ( 5+win->x() +win->width(), sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>lalt->move ( win->x() +win->width() +5, sty+ ( 5*35 ) );
- <span class="bkslt">\t</span>lalt->setText ( "Alt" );
-@@ -338,4 +338,4 @@
- <span class="bkslt">\t</span>space->setKeyCode ( 65 );
--<span class="bkslt">\t</span>space->resize ( 5*35+28,30 );
--<span class="bkslt">\t</span>space->move ( 5+lalt->x() +lalt->width(),sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>space->resize ( 133,30 );
-+<span class="bkslt">\t</span>space->move ( lalt->x() +lalt->width() +5, sty+ ( 5*35 ) );
- <span class="bkslt">\t</span>connect ( space, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
-@@ -345,4 +345,4 @@
- <span class="bkslt">\t</span>ralt = new VButton ( this,"" );
--<span class="bkslt">\t</span>ralt->resize ( 45,30 );
--<span class="bkslt">\t</span>ralt->move ( 5+space->x() +space->width(), sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>ralt->resize ( 50,30 );
-+<span class="bkslt">\t</span>ralt->move ( space->x() +space->width() +5, sty+ ( 5*35 ) );
- <span class="bkslt">\t</span>ralt->setText ( "AltGr" );
-@@ -376,3 +376,3 @@
- <span class="bkslt">\t</span>rctrl->resize ( 45,30 );
--<span class="bkslt">\t</span>rctrl->move ( 5+mnu->x() +mnu->width(), sty+ ( 5*35 ) );
-+<span class="bkslt">\t</span>rctrl->move ( mnu->x() +mnu->width() +5, sty+ ( 5*35 ) );
- <span class="bkslt">\t</span>rctrl->setText ( "Ctrl" );
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Replace text on Num pad keys for a better fit
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -411 +411 @@
+@@ -408 +408 @@
 -<span class="bkslt">\t</span>TQString txt[9] = { "Ho\\nme", TQString::fromUtf8("▲"), "Pg\\nUp",
-+<span class="bkslt">\t</span>TQString txt[9] = { TQString::fromUtf8("H\\u2190"), TQString::fromUtf8("▲"), TQString::fromUtf8("P\\u2191"),
-@@ -413 +413 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>"End", TQString::fromUtf8("▼"), "Pg\\nDn" };
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQString::fromUtf8("E\\u2192"), TQString::fromUtf8("▼"), TQString::fromUtf8("P\\u2193") };
-@@ -457 +457 @@
--<span class="bkslt">\t</span>numl->setText("Num\\nLock");
-+<span class="bkslt">\t</span>numl->setText(TQString::fromUtf8("\\u2116"));
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> dead_* characters don't display on keys, so add single click printable character equivalents
-<span class="dastx">##</span> to display on keys - the printed character remains as dead_&lt;whatever>
-<span class="dastx">##</span> Only needed for levels 0 and 1 - higher levels don't show on keys
-<span class="dastx">##</span> NoSymbol shows as an outline square [.notdef] on keys - replace with space=blank
-<span class="dastx">##</span> Re: MainWidget.cpp "* therefore keysymtab[] must remain SORTED by keysym value."
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -1008,2 +1030,3 @@
- } keysymtab[] = {
-+  { 0x0000, 0x0020 }, /*                  NoSymbol -> &lt;- space */
-   { 0x01a1, 0x0104 }, /*                     Aogonek Ą LATIN CAPITAL LETTER A WITH OGONEK */
-@@ -1781,2 +1782,18 @@
-   { 0x20ac, 0x20ac }, /*                    EuroSign € EURO SIGN */
-+  { 0xfe50, 0x0060 }, /*                  dead_grave ` */
-+  { 0xfe51, 0x00b4 }, /*                  dead_acute ´ */
-+  { 0xfe52, 0x02c6 }, /*             dead_circumflex ˆ */
-+  { 0xfe53, 0x02dc }, /*                  dead_tilde ˜ small tilde */
-+  { 0xfe54, 0x00af }, /*                 dead_macron ¯ */
-+  { 0xfe55, 0x02d8 }, /*                  dead_breve ˘ */
-+  { 0xfe56, 0x02d9 }, /*               dead_abovedot ˙ */
-+  { 0xfe57, 0x00a8 }, /*              dead_diaeresis ¨ */
-+  { 0xfe58, 0x02da }, /*              dead_abovering ° */
-+  { 0xfe59, 0x02dd }, /*            dead_doubleacute ˝ */
-+  { 0xfe5a, 0x02c7 }, /*                  dead_caron ˇ */
-+  { 0xfe5b, 0x00b8 }, /*                dead_cedilla ¸ */
-+  { 0xfe5c, 0x02db }, /*                 dead_ogonek ˛ */
-+  { 0xfe5d, 0x0269 }, /*                   dead_iota ɩ Latin small iota */
-+  { 0xfe64, 0x1fbf }, /*             dead_abovecomma ᾽ Greek Psili */
-+  { 0xfe65, 0x1ffe }, /*     dead_abovereversedcomma ῾ Greek Dasia */
- };
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> add a tooltip for the panel icon
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -1834,3 +1834,3 @@
- {
--
-+<span class="bkslt">\t</span>TQToolTip::add ( this, "Virtual keyboard" );
- }
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Fix Num pad numbers where 0-9 aren't the non-shift characters on the keyboard  
-<span class="dastx">##</span> E.g. for fr, the num pad '1' [KP_1 keycode 87] appears as '&amp;' [keycode 10] when Num Lock is on
-<span class="dastx">##</span> And fix Del keycode so that KP_Separator prints correctly, eg for gr = comma
-<span class="dastx">##</span> This is a quick-and-dirty fix because it effectively means that this routine is redundant.
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -416 +416 @@
--<span class="bkslt">\t</span>int nval[9] = {16,17,18,13,14,15,10,11,12};
-+<span class="bkslt">\t</span>int nval[9] = {79,80,81,83,84,85,87,88,89};
-@@ -436 +436 @@
--<span class="bkslt">\t</span>ins->setKeyCode(19,90);
-+<span class="bkslt">\t</span>ins->setKeyCode(90,90);
-@@ -448 +448 @@
--<span class="bkslt">\t</span>del->setKeyCode(60,91);
-+<span class="bkslt">\t</span>del->setKeyCode(91,91);
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Set a default keyboard background colour
-<span class="dastx">##</span> - changeable from configuration menu with a later patch
-<span class="dastx">##</span> For the plastik and keramik styles which have a key boundary within the key 30x30 footprint,
-<span class="dastx">##</span> setting the button/key background colour will bleed through outside that boundary
-<span class="dastx">##</span> except for the configuration button and the num pad keys, which follow these two lines.
-<span class="dastx">##</span> Moving these settings to the beginning of MainWidget::MainWidget enables all keys to be displayed correctly.
-<span class="dastx">#</span>
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -79,2 +79,5 @@
- 
-+<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor("#cdc0b0") );
-+<span class="bkslt">\t</span>setFocusPolicy ( TQ_NoFocus );
-+
- // <span class="bkslt">\t</span>resize ( 550,235 );
-@@ -405,5 +408,2 @@
- 
--<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQt::black );
--<span class="bkslt">\t</span>setFocusPolicy ( TQ_NoFocus );
--
- 
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Use icons for quit and num pad show/hide buttons
-<span class="dastx">##</span> these are the 16x16/actions icons used for the system selected icon set
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-<span class="dastx">#</span>
-<span class="dastx">##</span> num pad show button
-@@ -400 +400 @@
--<span class="bkslt">\t</span>extent->setText(">>");
-+<span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
-@@ -698 +698 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setText(">>");
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
-<span class="dastx">#</span>
-<span class="dastx">##</span> num pad hide button
-@@ -702 +702 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setText("&lt;&lt;");
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-backward")).pixmap());
-<span class="dastx">#</span>
-<span class="dastx">##</span> quit button
---- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -392 +392 @@
--<span class="bkslt">\t</span>quit->setPaletteBackgroundColor ( TQt::red );
-+<span class="bkslt">\t</span>quit->setPixmap(TQIconSet(SmallIcon("application-exit")).pixmap());
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Display '&amp;' where it is the lower key character on the key
-<span class="dastx">##</span> E.g. fr be azerty keyboards
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -895,5 +897,9 @@
- <span class="bkslt">\t</span>TQString btn_text(TQChar((uint)ret));
- <span class="bkslt">\t</span>
--<span class="bkslt">\t</span>v.setText(btn_text);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQChar c((uint)ret);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>if (c==\'&amp;\')
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setText("&amp;&amp;");
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>else
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setText(btn_text);
- 
- <span class="bkslt">\t</span>TQString btn_upper(btn_text.upper());
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> resize quit, num pad show/hide, configure buttons to see the icons better at reduced size of keyboard
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -390,2 +390,2 @@
--<span class="bkslt">\t</span>quit->resize ( 15,30 );
--<span class="bkslt">\t</span>quit->move ( 525,15 );
-+<span class="bkslt">\t</span>quit->resize ( 20,30 );
-+<span class="bkslt">\t</span>quit->move ( 526,15 );
-@@ -398,2 +398,2 @@
--<span class="bkslt">\t</span>extent->resize( 15,65 );
--<span class="bkslt">\t</span>extent->move(525, 85 );
-+<span class="bkslt">\t</span>extent->resize ( 20,65 );
-+<span class="bkslt">\t</span>extent->move(526, 85 );
-@@ -551,2 +551,2 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->resize ( 15,30 );
--<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->move ( 525,15+35 );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->resize ( 20,30 );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->move ( 526,15+35 );
-<span class="dastx">#</span>
-<span class="dastx">##</span> move numpad after resizing buttons
---- src/MainWidget.cpp
-+++ src/MainWidget.cpp
++<span class="bkslt">\t</span>TQString txt[9] = { TQString::fromUtf8("H\u2190"), TQString::fromUtf8("▲"), TQString::fromUtf8("P\u2191"),
 @@ -410 +410 @@
--<span class="bkslt">\t</span>int padx= 550;
-+<span class="bkslt">\t</span>int padx= 554;
-<span class="dastx">#</span>
-<span class="dastx">##</span> move and resize keyboard
---- src/MainWidget.cpp
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>"End", TQString::fromUtf8("▼"), "Pg\\nDn" };
++<span class="bkslt">\t</span><span class="bkslt">\t</span>TQString::fromUtf8("E\u2192"), TQString::fromUtf8("▼"), TQString::fromUtf8("P\u2193") };
+@@ -453 +453 @@
+-<span class="bkslt">\t</span>numl->setText("Num\\nLock");
++<span class="bkslt">\t</span>numl->setText(TQString::fromUtf8("\u2116"));
+@@ -479 +479 @@
+-<span class="bkslt">\t</span>ent->setText("En\\nter");
++<span class="bkslt">\t</span>ent->setText("Ent");'|patch -p0
+
+<span class="dastx">##</span> set small icons to better fit on buttons for keyboard used at default size
+echo $'--- src/MainWidget.cpp
 +++ src/MainWidget.cpp
-@@ -593 +593 @@
--<span class="bkslt">\t</span>int d_width=550;
-+<span class="bkslt">\t</span>int d_width=553;
-@@ -639,2 +639,2 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>sdxs = width() - (width() * (150.0/700.0));
--<span class="bkslt">\t</span><span class="bkslt">\t</span>VButton::pw=700.0;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>sdxs = width() - (width() * (150.0/703.0));
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>VButton::pw=703.0;
-@@ -642 +642 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>setMinimumSize(700/3,235/3);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>setMinimumSize(703/3,235/3);
-@@ -646,2 +646,2 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>sdxb = width() + (width() * (150.0/550.0));
--<span class="bkslt">\t</span><span class="bkslt">\t</span>VButton::pw=550.0;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>sdxb = width() + (width() * (150.0/552.0));
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>VButton::pw=552.0;
-@@ -649 +649 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>setMinimumSize(550/3,235/3);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>setMinimumSize(552/3,235/3);
---- src/VButton.cpp
+@@ -380 +380 @@
+-<span class="bkslt">\t</span>quit->setPixmap(TQIconSet(SmallIcon("application-exit", TDEIcon::SizeMedium)).pixmap());
++<span class="bkslt">\t</span>quit->setPixmap(TQIconSet(SmallIcon("application-exit")).pixmap());
+@@ -391 +391 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-backward", TDEIcon::SizeMedium)).pixmap());
++<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-backward")).pixmap());
+@@ -396 +396 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward", TDEIcon::SizeMedium)).pixmap());
++<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
+@@ -561 +561 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->setPixmap(TQIconSet(SmallIcon("configure", TDEIcon::SizeMedium)).pixmap());
++<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->setPixmap(TQIconSet(SmallIcon("configure")).pixmap());
+@@ -748 +748 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward", TDEIcon::SizeMedium)).pixmap());
++<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
+@@ -754 +754 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-backward", TDEIcon::SizeMedium)).pixmap());
++<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-backward")).pixmap());'|patch -p0
+
+<span class="dastx">##</span> configuration menu
+echo $'--- src/MainWidget.cpp
++++ src/MainWidget.cpp
+@@ -515 +515 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n("Font ..."), this, TQT_SLOT ( chooseFont() ) );
++<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n("Font"), this, TQT_SLOT ( chooseFont() ) );
+@@ -520,0 +521 @@
++<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertSeparator();
+@@ -522 +523 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Keys color"), this, TQT_SLOT ( chooseKeysColor() ) );
++<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Key color"), this, TQT_SLOT ( chooseKeysColor() ) );'|patch -p0
+
+<span class="dastx">##</span> key spacing &amp; sizing
+echo $'--- src/MainWidget.cpp
++++ src/MainWidget.cpp
+@@ -323 +323 @@
+-<span class="bkslt">\t</span>lalt->move ( lwin->x() +lwin->width() +6, sty+ ( 5*35 ) );
++<span class="bkslt">\t</span>lalt->move ( lwin->x() +lwin->width() +5, sty+ ( 5*35 ) );
+@@ -340 +340 @@
+-<span class="bkslt">\t</span>ralt->resize ( 48,30 );
++<span class="bkslt">\t</span>ralt->resize ( 50,30 );
+@@ -350 +350 @@
+-<span class="bkslt">\t</span>rwin->resize ( 48,30 );
++<span class="bkslt">\t</span>rwin->resize ( 50,30 );
+@@ -359 +359 @@
+-<span class="bkslt">\t</span>mnu->resize ( 49,30 );
++<span class="bkslt">\t</span>mnu->resize ( 50,30 );
+@@ -369 +369 @@
+-<span class="bkslt">\t</span>rctrl->resize ( 49,30 );
++<span class="bkslt">\t</span>rctrl->resize ( 45,30 );
+@@ -379 +379 @@
+-<span class="bkslt">\t</span>quit->move ( 524,15 );
++<span class="bkslt">\t</span>quit->move ( 526,15 );
+@@ -388 +388 @@
+-<span class="bkslt">\t</span>extent->move (524, 85 );
++<span class="bkslt">\t</span>extent->move (526, 85 );
+@@ -558 +558 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->move ( 524,15+35 );
++<span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->move ( 526,15+35 );
+@@ -959 +959 @@
+-<span class="bkslt">\t</span>resize ( 96,47 );
++<span class="bkslt">\t</span>resize ( 64,31 );'|patch -p0
+
+<span class="dastx">##</span> Caps+AltGr[+Shift] displayed characters should be toggled from the non-Caps state
+echo $'--- src/VButton.cpp
 +++ src/VButton.cpp
-@@ -5 +5 @@
--double VButton::pw=550.0;
-+double VButton::pw=552.0;
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> missing characters in keysymtab[] - for AC12 -> AD13 key on ua keyboard
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -1251,2 +1251,3 @@
-   { 0x06ac, 0x045c }, /*               Macedonia_kje ќ CYRILLIC SMALL LETTER KJE */
-+  { 0x06ad, 0x0491 }, /*   Ukrainian_ghe_with_upturn ґ CYRILLIC SMALL LETTER GHE WITH UPTURN */
-   { 0x06ae, 0x045e }, /*         Byelorussian_shortu ў CYRILLIC SMALL LETTER SHORT U */
-@@ -1266,2 +1267,3 @@
-   { 0x06bc, 0x040c }, /*               Macedonia_KJE Ќ CYRILLIC CAPITAL LETTER KJE */
-+  { 0x06bd, 0x0490 }, /*   Ukrainian_GHE_WITH_UPTURN Ґ CYRILLIC CAPITAL LETTER GHE WITH UPTURN */
-   { 0x06be, 0x040e }, /*         Byelorussian_SHORTU Ў CYRILLIC CAPITAL LETTER SHORT U */
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
+@@ -94,2 +94,13 @@
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>// Caps does not seem to make any difference when AltGr is pressed
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>if (shift)
++<span class="bkslt">\t</span><span class="bkslt">\t</span>// If Caps is on, displayed alpha characters should be toggled from the AltGr case
++<span class="bkslt">\t</span><span class="bkslt">\t</span>if (caps)
++<span class="bkslt">\t</span><span class="bkslt">\t</span>{
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>if (shift)
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>{
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(altGrShiftText.lower());
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>}
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>else
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>{
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(altGrText.upper());
++<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>}
++<span class="bkslt">\t</span><span class="bkslt">\t</span>}
++<span class="bkslt">\t</span><span class="bkslt">\t</span>else if (shift)'|patch -p0
+
+<span class="dastx">##</span> blank character display where AltGr does not provide extra characters
+echo $'--- src/VButton.cpp
++++ src/VButton.cpp
+@@ -56,6 +56,6 @@
+-<span class="bkslt">\t</span>if (c == " ")
+-<span class="bkslt">\t</span>{
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>// use normal text in case altGr does not provide extra characters.
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>// This is required at least on US keyboards, where altGr works as Alt.
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>c = nc;
+-<span class="bkslt">\t</span>}
++//<span class="bkslt">\t</span>if (c == " ")
++//<span class="bkslt">\t</span>{
++//<span class="bkslt">\t</span><span class="bkslt">\t</span>// use normal text in case altGr does not provide extra characters.
++//<span class="bkslt">\t</span><span class="bkslt">\t</span>// This is required at least on US keyboards, where altGr works as Alt.
++//<span class="bkslt">\t</span><span class="bkslt">\t</span>c = nc;
++//<span class="bkslt">\t</span>}
+@@ -74,6 +74,6 @@
+-<span class="bkslt">\t</span>if (c == " ")
+-<span class="bkslt">\t</span>{
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>// use shift text in case altGr does not provide extra characters.
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>// This is required at least on US keyboards, where altGr works as Alt.
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>c = sc;
+-<span class="bkslt">\t</span>}
++//<span class="bkslt">\t</span>if (c == " ")
++//<span class="bkslt">\t</span>{
++//<span class="bkslt">\t</span><span class="bkslt">\t</span>// use shift text in case altGr does not provide extra characters.
++//<span class="bkslt">\t</span><span class="bkslt">\t</span>// This is required at least on US keyboards, where altGr works as Alt.
++//<span class="bkslt">\t</span><span class="bkslt">\t</span>c = sc;
++//<span class="bkslt">\t</span>}
+#
+<span class="dastx">##</span> substitute the .notdef, VoidSymbol, with a space
+--- src/Xutils.cpp
++++ src/Xutils.cpp
+@@ -839,0 +840 @@
++  { 0x00ffffffL, 0x0020 }, /*                VoidSymbol -> &lt;- space */'|patch -p0
+
 <span class="dastx">##</span> generate keycode for Win keys with single click so that they can be used for xmodmap
-<b>echo</b> $'--- src/MainWidget.cpp
+echo $'--- src/MainWidget.cpp
 +++ src/MainWidget.cpp
 <span class="dastx">#</span>
-<span class="dastx">##</span> don\'t lock the LWin button
-@@ -325 +325 @@
--<span class="bkslt">\t</span>win->setToggleButton ( true );
-+<span class="bkslt">\t</span>win->setToggleButton ( false );
-<span class="dastx">##</span> don\'t lock the RWin button
-@@ -362 +362 @@
+<span class="dastx">##</span> donʹt lock the LWin button
+@@ -317 +317 @@
+-<span class="bkslt">\t</span>lwin->setToggleButton ( true );
++<span class="bkslt">\t</span>lwin->setToggleButton ( false );
+<span class="dastx">##</span> generate keycode on click rather than wait for next key-click
+@@ -318 +318,2 @@
+-<span class="bkslt">\t</span>mod_keys.append ( lwin );
++<span class="bkslt">\t</span>connect ( lwin, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
++<span class="bkslt">\t</span>other_keys.append( lwin );
+<span class="dastx">#</span>
+<span class="dastx">##</span> donʹt lock the RWin button
+@@ -354 +355 @@
 -<span class="bkslt">\t</span>rwin->setToggleButton ( true );
 +<span class="bkslt">\t</span>rwin->setToggleButton ( false );
-<span class="dastx">#</span>
-<span class="dastx">##</span> generate keycode on click rather than wait for next key-click for keycode
---- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-<span class="dastx">#</span>
-<span class="dastx">##</span> for LWin
-@@ -326 +326,2 @@
--<span class="bkslt">\t</span>mod_keys.append ( win );
-+<span class="bkslt">\t</span>connect ( win, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
-+<span class="bkslt">\t</span>other_keys.append( win );
-<span class="dastx">#</span>
-<span class="dastx">##</span> for RWin
-@@ -363 +364,2 @@
--<span class="bkslt">\t</span>mod_keys.append( rwin );
+<span class="dastx">##</span> generate keycode on click rather than wait for next key-click
+@@ -355 +356,2 @@
+-<span class="bkslt">\t</span>mod_keys.append ( rwin );
 +<span class="bkslt">\t</span>connect ( rwin, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
-+<span class="bkslt">\t</span>other_keys.append( rwin );
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> add 'Lock on screen' feature from v0.5
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -529,4 +529,8 @@
- <span class="bkslt">\t</span><span class="bkslt">\t</span>m->setItemChecked(mnu_dock, show_dock);
- <span class="bkslt">\t</span><span class="bkslt">\t</span>
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_lock = m->insertItem("Lock on screen", this, TQT_SLOT(toggleLock()));
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>bool is_locked = cfg->readBoolEntry("locked",false);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->setItemChecked(mnu_lock,is_locked);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>
- <span class="bkslt">\t</span><span class="bkslt">\t</span>//m->insertItem("Configure", this, TQT_SLOT(config()));
- <span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertSeparator();
-@@ -742,2 +746,14 @@
- }
-+void MainWidget::toggleLock()
-+{
-+<span class="bkslt">\t</span>bool c = isLocked();
-+
-+<span class="bkslt">\t</span>tray->contextMenu()->setItemChecked ( mnu_lock, !c );
-+<span class="bkslt">\t</span>setLocked(!c);
-+
-+<span class="bkslt">\t</span>TDEConfig *cfg = TDEApplication::kApplication()->config();
-+<span class="bkslt">\t</span>cfg->writeEntry ("locked", !c);
-+<span class="bkslt">\t</span>cfg->sync();
-+
-+}
- void MainWidget::showDock()
-<span class="dastx">#</span>
-<span class="dastx">##</span>
---- src/MainWidget.h
-+++ src/MainWidget.h
-@@ -69,2 +69,3 @@
-  <span class="bkslt">\t</span>void saveState();
-+<span class="bkslt">\t</span>void toggleLock();
- 
-@@ -131,2 +131,3 @@
- <span class="bkslt">\t</span>int mnu_autores;
-+<span class="bkslt">\t</span>int mnu_lock;
- 
-<span class="dastx">#</span>
-<span class="dastx">##</span>
---- src/DragWidget.cpp
-+++ src/DragWidget.cpp
-@@ -6,3 +6,3 @@
- <span class="bkslt">\t</span>drag=false;
--
-+<span class="bkslt">\t</span>locked=false;
- }
-@@ -17,2 +17,3 @@
- <span class="bkslt">\t</span>gpress=e->globalPos();
-+<span class="bkslt">\t</span>if (locked)return;
- <span class="bkslt">\t</span>drag=true;
-@@ -34,2 +35,12 @@
- }
-+
-+void DragWidget::setLocked(bool mode)
-+{
-+<span class="bkslt">\t</span>locked=mode;
-+}
-+
-+const bool DragWidget::isLocked() const
-+{
-+<span class="bkslt">\t</span>return locked;
-+}
- 
-<span class="dastx">#</span>
-<span class="dastx">##</span>
---- src/DragWidget.h
-+++ src/DragWidget.h
-@@ -14,2 +14,5 @@
- 
-+<span class="bkslt">\t</span>void setLocked(bool mode);
-+<span class="bkslt">\t</span>const bool isLocked() const;
-+
- private:
-@@ -24,2 +27,3 @@
- <span class="bkslt">\t</span>TQPoint gpress;
-+<span class="bkslt">\t</span>bool locked;
- 
-<span class="dastx">#</span>
-<span class="dastx">##</span>
---- src/resizabledragwidget.cpp
-+++ src/resizabledragwidget.cpp
-@@ -38,2 +38,3 @@
- {
-+<span class="bkslt">\t</span>if (locked)return;
- <span class="bkslt">\t</span>
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Fix azerty keyboards shift keys showing caps by simplifying the algorithm:
-<span class="dastx">#</span> * if Shift Lock is on, set text as shift character, else use lower character
-<span class="dastx">#</span> * if Caps Lock is on, set text as l.upper(), which will be upper case for alpha characters, or lower level for non-alpha characters, else use lower character
-<span class="dastx">#</span> * for lower level or shift characters, set ampersand as a special case
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -905,30 +905,22 @@
- <span class="bkslt">\t</span>KeyCode keycode=v.getKeyCode();
--
-+// first level character keysym
- <span class="bkslt">\t</span>KeySym keysym_l = XkbKeycodeToKeysym(display, keycode, 0, 0);
-+// second level, ie shift, character keysym
-+<span class="bkslt">\t</span>KeySym keysym_s = XkbKeycodeToKeysym(display, keycode, 0, 1);
- 
--<span class="bkslt">\t</span>KeySym keysym_u = XkbKeycodeToKeysym(display, keycode, 0, 1);
--
--<span class="bkslt">\t</span>long ret = keysym2ucs(keysym_l);
--
--<span class="bkslt">\t</span>TQString btn_text(TQChar((uint)ret));
-+<span class="bkslt">\t</span>long retl = keysym2ucs(keysym_l);
- <span class="bkslt">\t</span>
--<span class="bkslt">\t</span><span class="bkslt">\t</span>TQChar c((uint)ret);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>if (c==\'&amp;\')
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQChar l((uint)retl);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>if (l==\'&amp;\')
- <span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setText("&amp;&amp;");
- <span class="bkslt">\t</span><span class="bkslt">\t</span>else
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setText(btn_text);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setText(l);
- 
--<span class="bkslt">\t</span>TQString btn_upper(btn_text.upper());
-+<span class="bkslt">\t</span>long rets = keysym2ucs(keysym_s);
- 
--<span class="bkslt">\t</span>if (btn_upper==btn_text) {
--<span class="bkslt">\t</span><span class="bkslt">\t</span>ret = keysym2ucs(keysym_u);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>TQChar c((uint)ret);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>if (c==\'&amp;\')
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQChar s((uint)rets);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>if (s==\'&amp;\')
- <span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setShiftText("&amp;&amp;");
- <span class="bkslt">\t</span><span class="bkslt">\t</span>else
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setShiftText(c);
--<span class="bkslt">\t</span>}
--<span class="bkslt">\t</span>else {
--<span class="bkslt">\t</span><span class="bkslt">\t</span>v.setShiftText(btn_upper);
--<span class="bkslt">\t</span>}
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>v.setShiftText(s);
- }
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<b>echo</b> $'--- src/VButton.cpp
-+++ src/VButton.cpp
-@@ -22,16 +22,6 @@
- {
--<span class="bkslt">\t</span>if (press==true){<span class="bkslt">\t</span>
--<span class="bkslt">\t</span><span class="bkslt">\t</span>TQString tu=l.upper();
--<span class="bkslt">\t</span><span class="bkslt">\t</span>if (tu.compare(l)==0){
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>//TQPushButton::setText(tu);
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(u);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>}
--<span class="bkslt">\t</span><span class="bkslt">\t</span>else{
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(tu);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>}
--
--<span class="bkslt">\t</span>}
--<span class="bkslt">\t</span>else{
-+<span class="bkslt">\t</span>if (press==true)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(s);
-+<span class="bkslt">\t</span>else
- <span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(l);
--<span class="bkslt">\t</span>}
- }
-@@ -39,14 +29,7 @@
- {
--<span class="bkslt">\t</span>if (press==true){<span class="bkslt">\t</span>
-+<span class="bkslt">\t</span>if (press==true) {
- <span class="bkslt">\t</span><span class="bkslt">\t</span>TQString tu=l.upper();
--<span class="bkslt">\t</span><span class="bkslt">\t</span>if (tu.compare(l)==0){
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(tu);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>}
--<span class="bkslt">\t</span><span class="bkslt">\t</span>else{
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(u);
--<span class="bkslt">\t</span><span class="bkslt">\t</span>}
--<span class="bkslt">\t</span>}
--<span class="bkslt">\t</span>else{
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(tu); }
-+<span class="bkslt">\t</span>else
- <span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(l);
--<span class="bkslt">\t</span>}
- }
-@@ -60,3 +43,3 @@
- {
--<span class="bkslt">\t</span>u=text;
-+<span class="bkslt">\t</span>s=text;
- }
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<b>echo</b> $'--- src/VButton.h
-+++ src/VButton.h
-@@ -31,3 +31,3 @@
- <span class="bkslt">\t</span>unsigned int keycode;
--<span class="bkslt">\t</span>TQString u;
-+<span class="bkslt">\t</span>TQString s;
- <span class="bkslt">\t</span>TQString l;
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<b>echo</b> $'--- src/numpadvbutton.cpp
-+++ src/numpadvbutton.cpp
-@@ -35,3 +35,3 @@
- <span class="bkslt">\t</span>if (press==true){
--<span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(u);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(s);
- <span class="bkslt">\t</span><span class="bkslt">\t</span>VButton::setKeyCode(numlock_code);
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Set a default button background colour which otherwise defaults to system colour
-<span class="dastx">##</span> Changeable from configuration menu
-<b>echo</b> $'--- src/VButton.cpp
-+++ src/VButton.cpp
-@@ -11,2 +11,3 @@
- <span class="bkslt">\t</span>//connect(this,TQT_SIGNAL(clicked()),this,TQT_SLOT(sendKey()));
-+<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor("#f0f0f0") );
- <span class="bkslt">\t</span>setFocusPolicy(TQ_NoFocus);
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Base the auto font size on main board size otherwise when the num pad is brought into view
-<span class="dastx">##</span> the font size immediately increases in proportion, ie by 703/552.
-<span class="dastx">##</span> and set a more realistic initial font size
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -690,3 +690,6 @@
- <span class="bkslt">\t</span><span class="bkslt">\t</span>//double rs = (100.0/700.0)*width();
--<span class="bkslt">\t</span><span class="bkslt">\t</span>double rp = (8.0/600.0)*width();
-+<span class="bkslt">\t</span>if (extent_visible) {
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>rp = (11.0/600.0)*width() * (552.0/703.0); }
-+<span class="bkslt">\t</span>else {
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>rp = (11.0/600.0)*width(); }
- <span class="bkslt">\t</span><span class="bkslt">\t</span>//fnt.setStretch(rs);
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<b>echo</b> $'--- src/MainWidget.h
-+++ src/MainWidget.h
-@@ -130,2 +130,3 @@
- <span class="bkslt">\t</span>double sdxb;
-+<span class="bkslt">\t</span>double rp;
- <span class="bkslt">\t</span>int mnu_dock;
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> i18n
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -519 +519 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( "Font ...", this, TQT_SLOT ( chooseFont() ) );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Font"), this, TQT_SLOT ( chooseFont() ) );
-@@ -521 +521 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_autores = m->insertItem( "Auto resize font",this, TQT_SLOT ( toggleFontAutoRes() ) );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_autores = m->insertItem( i18n ("Auto resize font"),this, TQT_SLOT ( toggleFontAutoRes() ) );
-@@ -524 +524,0 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>
-@@ -526 +525 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_dock = m->insertItem ( "Dock widget", this, TQT_SLOT ( showDock() ) );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_dock = m->insertItem ( i18n ("Dock widget"), this, TQT_SLOT ( showDock() ) );
-@@ -531 +530 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_lock = m->insertItem("Lock on screen", this, TQT_SLOT(toggleLock()));
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_lock = m->insertItem( i18n ("Lock on screen"), this, TQT_SLOT(toggleLock()));
-@@ -537 +536 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( "Help", h->menu() );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Help"), h->menu() );
-@@ -1854 +1853 @@
--<span class="bkslt">\t</span>TQToolTip::add ( this, "Virtual keyboard" );
-+<span class="bkslt">\t</span>TQToolTip::add ( this, i18n ("Virtual keyboard") );
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> Add TQColorDialog
-<span class="dastx">##</span> keyboard colour defaults to #cdc0b0
-<span class="dastx">##</span> key/button colour defaults to #f0f0f0
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -39,4 +39,3 @@
- #include &lt;tdeapplication.h>
--
--
-+#include &lt;ntqcolordialog.h>
- 
-<span class="dastx">##</span> load any existing chosen colours for the keyboard, otherwise default to #cdc0b0
-@@ -79,3 +78,7 @@
- 
--<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor("#cdc0b0") );
-+<span class="bkslt">\t</span>TDEConfig *cfg = TDEApplication::kApplication()->config();
-+// if "kbColor" entry doesn\'t exist - either because it hasn\'t been saved
-+// or kvkbdrc doesn\'t exist, default to "#cdc0b0"
-+<span class="bkslt">\t</span>TQColor bc = cfg->readEntry ("kbColor","#cdc0b0");
-+<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor(bc) );
- <span class="bkslt">\t</span>setFocusPolicy ( TQ_NoFocus );
-<span class="dastx">##</span> new configuration menu entries
-@@ -524,2 +527,8 @@
- 
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertSeparator();
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Keyboard color"), this, TQT_SLOT ( Colorb() ) );
-+
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Key color (restart if changed)"), this, TQT_SLOT ( Colork() ) );
-+
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertSeparator();
- <span class="bkslt">\t</span><span class="bkslt">\t</span>mnu_dock = m->insertItem ( i18n ("Dock widget"), this, TQT_SLOT ( showDock() ) );
-<span class="dastx">##</span> open ColorDialog and save chosen colours
-@@ -573,3 +582,26 @@
- 
--
-+void MainWidget::Colorb() // keyboard colour chosen through the configuration menu
-+{
-+<span class="bkslt">\t</span>TDEConfig *cfg = TDEApplication::kApplication()->config();
-+// if "kbColor" entry exists, start with that, otherwise start with the default "#cdc0b0"
-+<span class="bkslt">\t</span>TQColor bc = cfg->readEntry ("kbColor","#cdc0b0");
-+<span class="bkslt">\t</span>TQColor b = TQColorDialog::getColor( TQColor( bc ) );
-+// if the selection of the new colour is cancelled, b will be invalid
-+// otherwise the new value is written to kvkbdrc
-+// - this must be in the #rrggbb format
-+<span class="bkslt">\t</span>if ( b.isValid() ) {
-+<span class="bkslt">\t</span>cfg->writeEntry ("kbColor", b.name() );
-+<span class="bkslt">\t</span>cfg->sync();
-+<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor( b ) ); }
-+}
-+void MainWidget::Colork() // key/button colour chosen through the configuration menu
-+{
-+<span class="bkslt">\t</span>TDEConfig *cfg = TDEApplication::kApplication()->config();
-+<span class="bkslt">\t</span>TQColor kc = cfg->readEntry ("keyColor","#f0f0f0");
-+<span class="bkslt">\t</span>TQColor k = TQColorDialog::getColor( TQColor( kc ) );
-+<span class="bkslt">\t</span>if ( k.isValid() ) {
-+<span class="bkslt">\t</span>cfg->writeEntry ("keyColor", k.name() );
-+<span class="bkslt">\t</span>cfg->sync(); }
-+// can\'t set PaletteBackgroundColor because it\'s in VButton::VButton - needs restart to read configuration entry
-+}
- void MainWidget::finishInit()
-<span class="dastx">##</span> set initially 150 from the RH edge of the screen to allow for the num pad
-<span class="dastx">##</span> and set 50 from the bottom edge to allow for the panel
-@@ -599,3 +631,3 @@
- <span class="bkslt">\t</span>int d_height=235;
--<span class="bkslt">\t</span>TQRect dflt_geom(screen_geom.width()-d_width,screen_geom.height()-d_height,d_width,d_height);
-+<span class="bkslt">\t</span>TQRect dflt_geom(screen_geom.width()-d_width-150,screen_geom.height()-d_height-50,d_width,d_height);
- 
---- src/MainWidget.h
-+++ src/MainWidget.h
-@@ -70,2 +70,4 @@
- <span class="bkslt">\t</span>void toggleLock();
-+<span class="bkslt">\t</span>void Colorb();
-+<span class="bkslt">\t</span>void Colork();
- 
---- src/VButton.cpp
-+++ src/VButton.cpp
-@@ -3,2 +3,4 @@
- #include &lt;tqfont.h>
-+#include &lt;tdeconfig.h>
-+#include &lt;tdeapplication.h>
- 
-<span class="dastx">##</span> load any existing chosen colours for the keys/buttons, otherwise default to #f0f0f0
-@@ -11,4 +13,10 @@
- <span class="bkslt">\t</span>//connect(this,TQT_SIGNAL(clicked()),this,TQT_SLOT(sendKey()));
--<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor("#f0f0f0") );
-+<span class="bkslt">\t</span>TDEConfig *cfg = TDEApplication::kApplication()->config();
-+// if "keyColor" entry doesn\'t exist - either because it hasn\'t been saved
-+// or kvkbdrc doesn\'t exist, default to "#f0f0f0"
-+<span class="bkslt">\t</span>TQColor kc = cfg->readEntry ("keyColor","#f0f0f0");
-+<span class="bkslt">\t</span>setPaletteBackgroundColor ( TQColor(kc) );
-+
- <span class="bkslt">\t</span>setFocusPolicy(TQ_NoFocus);
-+
- <span class="bkslt">\t</span>resize(30,30);
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-&lt;&lt;'comment'
-The keyboard geometry is saved when either of the Quit options is selected.
-If the num pad is visible [extent_visible=true] when Kvkbd is Quit, then when it is run again, with the default being extent_visible=false, the keyboard will display without the num pad but at an x-axis size which includes the num pad dimension, ie elongated.
-To fix this, add the state of extent_visible to the configuration file and start with that when Kvkbd is re-started.
-comment
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -76,5 +76,6 @@
- <span class="bkslt">\t</span>int sty=15;
--<span class="bkslt">\t</span>extent_visible=false;
- 
- <span class="bkslt">\t</span>TDEConfig *cfg = TDEApplication::kApplication()->config();
-+// if the num pad was visible when Kvkbd was \'Quit\', the geometry includes it, so start with the num pad in the same state
-+<span class="bkslt">\t</span>extent_visible = cfg->readBoolEntry("numpad_visible",false);
- // if "kbColor" entry doesn\'t exist - either because it hasn\'t been saved
-@@ -659,2 +660,3 @@
- <span class="bkslt">\t</span><span class="bkslt">\t</span>cfg->writeEntry("geometry",geometry());
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>cfg->writeEntry("numpad_visible",extent_visible);
- <span class="bkslt">\t</span><span class="bkslt">\t</span>cfg->sync();
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> add tooltips to buttons
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -398,2 +398,3 @@
- <span class="bkslt">\t</span>quit->setPixmap(TQIconSet(SmallIcon("application-exit")).pixmap());
-+<span class="bkslt">\t</span>TQToolTip::add( quit, i18n( "Hide keyboard" ) );
- <span class="bkslt">\t</span>quit->res();
-@@ -406,2 +407,3 @@
- <span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
-+<span class="bkslt">\t</span>TQToolTip::add( extent, i18n( "Show num pad" ) );
- <span class="bkslt">\t</span>extent->res();
-@@ -571,3 +573,3 @@
- <span class="bkslt">\t</span><span class="bkslt">\t</span>popup_menu->setPixmap(TQIconSet(SmallIcon("configure")).pixmap());
--
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQToolTip::add( popup_menu, i18n( "Configure" ) );
- <span class="bkslt">\t</span><span class="bkslt">\t</span>other_keys.append(popup_menu);
-@@ -989,3 +991,3 @@
- 
--<span class="bkslt">\t</span>TQToolTip::add ( this, "Toggle keyboard visibility" );
-+<span class="bkslt">\t</span>TQToolTip::add ( this, i18n ("Toggle keyboard visibility") );
- }
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> more add tooltips to buttons
-<span class="dastx">##</span> if the num pad was visible, the tooltip continued to show 'Show num pad'
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -742,2 +742,3 @@
- <span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQToolTip::add( extent, i18n( "Show num pad" ) );
- <span class="bkslt">\t</span>}
-@@ -747,2 +748,3 @@
- <span class="bkslt">\t</span><span class="bkslt">\t</span>TQWidget::resize (  (int)sdxb, height() );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQToolTip::add( extent, i18n( "Hide num pad" ) );
- <span class="bkslt">\t</span>}
-' | patch -N -p0
-<span class="dastx" style="float:left;">#</span><hr style="float:left;width:100px;">
-<span class="dastx">##</span> yet more add tooltips to buttons
-<span class="dastx">##</span> if Kvkbd was 'Quit' with the num pad visible, on restart the double arrow was indicating 'Show num pad'
-<b>echo</b> $'--- src/MainWidget.cpp
-+++ src/MainWidget.cpp
-@@ -406,4 +406,8 @@
- <span class="bkslt">\t</span>extent->move(526, 85 );
--<span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
--<span class="bkslt">\t</span>TQToolTip::add( extent, i18n( "Show num pad" ) );
-+<span class="bkslt">\t</span>if (extent_visible) {
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-backward")).pixmap());
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQToolTip::add( extent, i18n( "Hide num pad" ) ); }
-+<span class="bkslt">\t</span>else {
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>extent->setPixmap(TQIconSet(SmallIcon("media-seek-forward")).pixmap());
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>TQToolTip::add( extent, i18n( "Show num pad" ) ); }
- <span class="bkslt">\t</span>extent->res();
-' | patch -N -p0
++<span class="bkslt">\t</span>other_keys.append( rwin );'|patch -p0
+
+<span class="dastx">##</span> another combining character to display
+echo $'--- src/Xutils.cpp
++++ src/Xutils.cpp
+@@ -871,0 +872 @@
++  { 0x01000358L, 0x02d9 }, /*   combining dot above right ˙ dot above */'|patch -p0
 </code>
 <code class="thtwo">chown_fn
 
@@ -4344,6 +3643,7 @@ cmake-toolchain_fn
   cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
