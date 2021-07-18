@@ -114,12 +114,12 @@ fi
 } || \
 {
 ## otherwise, not R14.0.10 or misc, and we are creating/updating git,
-## so [1] start with admin/cmake:
+## so [1] start with admin:
 [[ $(cat $TMPVARS/DL_CGIT) == yes ]] && {
 cd $BUILD_TDE_ROOT/src/cgit
 
-[[ ! -e $TMPVARS/admin-cmake-done ]] && {
-## if admin and cmake exist, update them
+[[ ! -e $TMPVARS/admin-done ]] && {
+## if admin exists, update it
 [[ -d admin ]] && \
 (echo "Updating admin ..."
 cd admin
@@ -127,19 +127,12 @@ git checkout -- *
 git pull
 ## repo is in master - update r14.0.x to latest revision
 git fetch origin r14.0.x:r14.0.x)
-[[ -d cmake ]] && \
-(echo "Updating cmake ..."
-cd cmake
-git checkout -- *
-git pull
-git fetch origin r14.0.x:r14.0.x)
 
-## if admin and cmake don't exist, clone them
+## if admin doesn't exist, clone it
 [[ ! -d admin ]] && git clone https://mirror.git.trinitydesktop.org/cgit/admin admin
-[[ ! -d cmake ]] && git clone https://mirror.git.trinitydesktop.org/cgit/cmake cmake
 
-## place a marker so that admin/cmake update or clone only once per run of BUILD-TDE.sh
-touch $TMPVARS/admin-cmake-done
+## place a marker so that admin update or clone only once per run of BUILD-TDE.sh
+touch $TMPVARS/admin-done
 }
 
 ## if not tde-i18n
@@ -273,11 +266,6 @@ rm -rf .git/worktrees/*
 git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/admin/ r14.0.x
 }
 
-cd ../cmake
-echo -e "\n copying cmake git sources to build area ... \n"
-rm -rf .git/worktrees/*
-git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/cmake/ r14.0.x
-
 [[ " arts tdelibs " == *$PRGNAM* ]] && {
 cd ../libltdl
 echo -e "\n copying libltdl git sources to build area ... \n"
@@ -301,7 +289,7 @@ echo # if this fails, SlackBuild will fail from [3]
 echo -e "\n copying $PRGNAM git sources to build area ... \n"
 (cd $BUILD_TDE_ROOT/src/cgit
 cp -a --parents $PRGNAM/* $TMP_BUILD/tmp-$PRGNAM/
-cp -a --parents {admin,cmake}/* $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/
+cp -a --parents admin/* $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/
 [[ " arts tdelibs " == *$PRGNAM* ]] && cp -a --parents libltdl/* $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/
 [[ " tdenetwork " == *$PRGNAM* ]] && cp -a --parents libtdevnc/* $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/
 #
