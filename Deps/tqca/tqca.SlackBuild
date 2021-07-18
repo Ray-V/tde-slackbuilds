@@ -23,7 +23,7 @@
 #   OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 #   SUCH DAMAGE.
 
-PRGNAM=tqca-tls
+PRGNAM=tqca
 VERSION=$TDEVERSION
 BUILD=${BUILD:-1}
 TAG=${TAG:-_tde}
@@ -67,15 +67,15 @@ echo "
 # make exactly 11 lines for the formatting to be correct.  It's also
 # customary to leave one space after the ':'.
        |-----handy-ruler------------------------------------------------------|
-$PRGNAM: tqca-tls (Plugin to provide SSL/TLS capability)
+$PRGNAM: tqca (The TQt Cryptographic Architecture)
 $PRGNAM:
-$PRGNAM: This is a plugin to provide SSL/TLS capability to programs that
-$PRGNAM: utilize the TQt Cryptographic Architecture (TQCA).
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
-$PRGNAM:
+$PRGNAM: This library provides an easy API for the following features:
+$PRGNAM:  SSL/TLS
+$PRGNAM:  X509
+$PRGNAM:  SASL
+$PRGNAM:  RSA
+$PRGNAM:  Hashing (SHA1, MD5)
+$PRGNAM:  Ciphers (BlowFish, 3DES, AES)
 $PRGNAM:
 $PRGNAM:
 " > $PKG/install/slack-desc

@@ -340,13 +340,13 @@ Look out for messages in the bottom line of the screen, especially relating to d
 
 Non-TDE apps are in the Misc category and don't need the \Zb\Zr\Z4R\Znequired TDE packages." \
 0 0 0 \
-"Deps/tqt3" "\Zb\Zr\Z4R\Zn The Qt package for TDE" off "\Zb\Z6  \Zn" \
-"Deps/tqtinterface" "\Zb\Zr\Z4R\Zn TDE bindings to tqt3." off "\Zb\Z6  \Zn" \
+"Deps/tqt3" "\Zb\Zr\Z4R\Zn The TQt library" off "\Zb\Z6  \Zn" \
+"Deps/tqtinterface" "\Zb\Zr\Z4R\Zn TDE bindings to TQt3." off "\Zb\Z6  \Zn" \
 "Deps/arts" "\Zb\Zr\Z4R\Zn Sound server for TDE" off "\Zb\Z6   \Zn" \
 "Deps/dbus-tqt" "\Zb\Zr\Z4R\Zn A simple IPC library" off "\Zb\Z6   \Zn" \
 "Deps/dbus-1-tqt" "\Zb\Zr\Z4R\Zn D-Bus bindings" off "\Zb\Z6   \Zn" \
 "Deps/libart-lgpl" "\Zb\Zr\Z4R\Zn The LGPL'd component of libart" off "\Zb\Z6   \Zn" \
-"Deps/tqca-tls" "\Zb\Zr\Z4R\Zn Plugin to provide SSL/TLS capability" off "\Zb\Z6   \Zn" \
+"Deps/tqca" "\Zb\Zr\Z4R\Zn The TQt Cryptographic Architecture" off "\Zb\Z6   \Zn" \
 "Deps/avahi-tqt" "Avahi support" off "\Zb\Z6 Optional for tdelibs and used if installed. Requires Avahi. \Zn" \
 "Core/tdelibs" "\Zb\Zr\Z4R\Zn TDE libraries" off "\Zb\Z6 Will build with Avahi support if avahi/avahi-tqt are installed. \Zn" \
 "Core/tdebase" "\Zb\Zr\Z4R\Zn TDE base" off "\Zb\Z6   \Zn" \
