@@ -23,7 +23,7 @@
 #   OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 #   SUCH DAMAGE.
 
-PRGNAM=tqca-tls
+PRGNAM=tde-common-cmake
 VERSION=$TDEVERSION
 BUILD=${BUILD:-1}
 TAG=${TAG:-_tde}
@@ -47,7 +47,6 @@ cmake ${G_NINJA:-} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DWITH_GCC_VISIBILITY="OFF" \
     -Wno-dev \
     ..
 
@@ -67,10 +66,10 @@ echo "
 # make exactly 11 lines for the formatting to be correct.  It's also
 # customary to leave one space after the ':'.
        |-----handy-ruler------------------------------------------------------|
-$PRGNAM: tqca-tls (Plugin to provide SSL/TLS capability)
+$PRGNAM: tde-common-cmake (TDE CMake modules)
 $PRGNAM:
-$PRGNAM: This is a plugin to provide SSL/TLS capability to programs that
-$PRGNAM: utilize the TQt Cryptographic Architecture (TQCA).
+$PRGNAM: This package contains CMake modules which are required to build
+$PRGNAM: most TDE packages.
 $PRGNAM:
 $PRGNAM:
 $PRGNAM:
