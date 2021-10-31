@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.0.10 have been verified for 64-bit arm only].
+[Edit: builds for R14.0.11 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -178,9 +178,9 @@ The intention is that as much as possible that is required for the TDE cross com
 │   │       └── <span class="comment">ld-linux-*.so.* &hellip;</span>
 │   ├── bin				cross compiler
 │   │   └── <span class="comment">$TARGET-gcc &hellip;</span>
-│   └── sysroot &diamondsuit;&diamondsuit;
-│       ├── lib$LIBDIRSUFFIX		target libraries
-│       ├── usr
+│   └── sysroot
+│       ├── lib$LIBDIRSUFFIX &diamondsuit;&diamondsuit;		target libraries
+│       ├── usr &diamondsuit;&diamondsuit;
 │       │   ├── include			target headers
 │       │   │   └── linux		kernel headers
 │       │   └── lib$LIBDIRSUFFIX	target libraries
@@ -590,11 +590,12 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.10</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.11</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
 export TQTDIR=$INSTALL_TDE
+export INST_RPATH=$TQTDIR/lib$LIBDIRSUFFIX
 export COMPILER=$HOST-gcc
 export COMPILER_CXX=$HOST-g++
 export CC=$COMPILER
@@ -603,7 +604,7 @@ export PLUGIN_INSTALL_DIR=tde
 export NUMJOBS=<b>-j6</b>
 export BUILD=<b>1</b>
 export SLKLDFLAGS=<b>""</b>
-export SLKCFLAGS=<b>-O2</b>
+export SLKCFLAGS=<b>"-O2 -w -Wl,-rpath,'$INST_RPATH'"</b>
 export I18N=<b>en_GB</b>
 </code>
 <span class="dastx">##</span> Set variables for local paths:
@@ -781,6 +782,9 @@ export PKG_CONFIG_LIBDIR=$SYSROOT/usr/lib$LIBDIRSUFFIX/pkgconfig:$SYSROOT/usr/sh
 {
 cd $TMP/tmp-$PRGNAM
 tar xf $SYSROOT/src/$PRGNAM-*$VERSION.tar.*
+[[ $VERSION == $TDE_VERSION ]] &amp;&amp; (cd $PRGNAM*
+mkdir cmake
+tar xf $SYSROOT/src/cmake-*$VERSION.tar.* --strip-components=1 -C cmake)
 cd $PRGNAM-*$VERSION
 }
 
@@ -1053,7 +1057,7 @@ echo $'--- mkspecs/linux-arm-g++/qmake.conf
  -plugin-style-sgi \
  -plugin-style-windows \
  -fast \
- -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib\'
+ -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib:$INST_RPATH\'
 </code>
 <span class="dastx">##</span> Don't build tutorial and examples which won't be installed because the release version is being built
 <code class="thtwo">make $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools
@@ -1082,12 +1086,6 @@ rm libtqassistantclient*)
 <span class="dastx">##</span> remove sysroot path from RPi3 package
 <code class="thtwo">sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/libtqt-mt.la
 sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig/tqt-mt.pc
-</code>
-<span class="dastx">##</span> move mkspecs/linux-arm-g++ to the TDE installation directory - it isn't needed for the RPi3 package, but is needed for building tqca-tls
-<code class="thtwo">(cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/
-mkdir -p $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs
-mv linux-arm-g++ $INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs
-ln -sf linux-g++ default)
 </code>
 <code class="thtwo">mkdir -p $PKG/etc/profile.d
 
@@ -1261,7 +1259,7 @@ cmake \
     -DWITH_ALSA="ON" \
     -DWITH_AUDIOFILE="ON" \
     -DWITH_ESOUND="OFF" \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DWITH_JACK="OFF" \
     -DWITH_MAD="ON" \
     -DWITH_SNDIO="OFF" \
@@ -1383,7 +1381,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -Wno-dev \
     ..
 
@@ -1441,7 +1439,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DMAN_INSTALL_DIR=/usr/man \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -Wno-dev \
     ..
@@ -1464,14 +1462,14 @@ ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 <!-- libart - end -->
 
 <p>
-<!-- tqca_tls - start -->
-<a name="close_tqca_tls"></a>
+<!-- tqca - start -->
+<a name="close_tqca"></a>
 <br>
-<span class="tabs reqd"><a href="#tqca_tls">&hellip; tqca-tls</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+<span class="tabs reqd"><a href="#tqca">&hellip; tqca</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
 </span>
-<div id="tqca_tls" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tqca_tls">close</a></span>
+<div id="tqca" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tqca">close</a></span>
 <code><code class="thtwo">cd /
-PRGNAM=tqca-tls
+PRGNAM=tqca
 VERSION=$TDE_VERSION
 BUILD=$BUILD
 TMP=/tmp/build
@@ -1498,7 +1496,9 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DBUILD_TQCA="ON" \
+    -DBUILD_TQCA_TLS="ON" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -Wno-dev \
     ..
 
@@ -1514,10 +1514,10 @@ makepkg_fn
 installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 </code></code>
-<span class="tabs"><a href="#close_tqca_tls">close</a></span>
+<span class="tabs"><a href="#close_tqca">close</a></span>
 </div>
 <br></div>
-<!-- tqca_tls - end -->
+<!-- tqca - end -->
 
 
 <p>
@@ -1670,7 +1670,7 @@ cmake \
     -DWITH_DEVKITPOWER="ON" \
     -DWITH_ELFICON="OFF" \
     -DWITH_GAMIN="OFF" \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DWITH_HAL="OFF" \
     -DWITH_HSPELL="OFF" \
     -DWITH_IMAGETOPS_BINARY="OFF" \
@@ -1729,7 +1729,7 @@ ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 
 <span class="dastx">##</span> prefix paths with SYSROOT for build.make => link.txt dependencies for cmake builds for consistency with pkg-config paths
 sed -i "s|\"$INSTALL_TDE|\"$SYSROOT$INSTALL_TDE|" {,$SYSROOT}$INSTALL_TDE/share/cmake/tdelibs.cmake
-<span class="dastx">##</span> reinstate the sysroot paths stripped out of the package for libz, libjpeg, libasound
+<span class="dastx">##</span> reinstate the sysroot paths for the installed libz, libjpeg, libasound files required for the build
 sed -i "s|;/usr|;$SYSROOT/usr|" {,$SYSROOT}$INSTALL_TDE/share/cmake/tdelibs.cmake
 </code></code>
 <span class="tabs"><a href="#close_tdelibs">close</a></span>
@@ -1876,7 +1876,7 @@ cmake \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_ARTS="ON" \
     -DWITH_ELFICON="OFF" \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DWITH_HAL="OFF" \
     -DWITH_I8K="OFF" \
     -DWITH_LDAP="OFF" \
@@ -1960,8 +1960,8 @@ cmake \
     -Wno-dev \
     ..
 
-<span class="dastx">##</span> If the linker has decided it can't find some libs to build kicker even though they've been built,
-<span class="dastx">##</span> editing kicker.dir/link.txt and rerunning make works:
+<span class="dastx">##</span> If the linker can't find some libs to build kicker even though they've been built,
+<span class="dastx">##</span> edit kicker.dir/link.txt and rerun 'make':
 make $NUMJOBS || \
 [[ ! -e ./kicker/kicker/kicker ]] &amp;&amp; {
 sed -i 's|^.*$|&amp; ../../libkonq/libkonq.so.4 ./interfaces/libkickoffsearch_interfaces.so.0|' ./kicker/kicker/CMakeFiles/kicker.dir/link.txt  &amp;&amp; \
@@ -2558,7 +2558,7 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 </code>
-<span class="dastx">##</span> patches thanks to fedora
+Patches thanks to fedora
 <code class="thtwo">echo $'--- Imlib/load.c
 +++ Imlib/load.c
 @@ -6,0 +7,2 @@
@@ -3180,7 +3180,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -DBUILD_KCRON="ON" \
     -DBUILD_KDAT="ON" \
@@ -3257,7 +3257,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -DBUILD_TRANSLATIONS="ON" \
     -Wno-dev \
@@ -3338,7 +3338,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DWITH_LIBIW="OFF" \
     -DBUILD_DOC="ON" \
     -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
@@ -3409,6 +3409,7 @@ MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
 ../configure \
    --prefix=$INSTALL_TDE \
    --mandir=$INSTALL_TDE/man \
+   --enable-gcc-hidden-visibility \
    --disable-rpath \
    --host=$HOST
 
@@ -3548,26 +3549,6 @@ echo $'--- src/MainWidget.cpp
 -<span class="bkslt">\t</span>resize ( 96,47 );
 +<span class="bkslt">\t</span>resize ( 64,31 );'|patch -p0
 
-<span class="dastx">##</span> Caps+AltGr[+Shift] displayed characters should be toggled from the non-Caps state
-echo $'--- src/VButton.cpp
-+++ src/VButton.cpp
-@@ -94,2 +94,13 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>// Caps does not seem to make any difference when AltGr is pressed
--<span class="bkslt">\t</span><span class="bkslt">\t</span>if (shift)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>// If Caps is on, displayed alpha characters should be toggled from the AltGr case
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>if (caps)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>{
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>if (shift)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>{
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(altGrShiftText.lower());
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>}
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>else
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>{
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>TQPushButton::setText(altGrText.upper());
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>}
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>}
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>else if (shift)'|patch -p0
-
 <span class="dastx">##</span> blank character display where AltGr does not provide extra characters
 echo $'--- src/VButton.cpp
 +++ src/VButton.cpp
@@ -3627,12 +3608,6 @@ echo $'--- src/MainWidget.cpp
 -<span class="bkslt">\t</span>mod_keys.append ( rwin );
 +<span class="bkslt">\t</span>connect ( rwin, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
 +<span class="bkslt">\t</span>other_keys.append( rwin );'|patch -p0
-
-<span class="dastx">##</span> another combining character to display
-echo $'--- src/Xutils.cpp
-+++ src/Xutils.cpp
-@@ -871,0 +872 @@
-+  { 0x01000358L, 0x02d9 }, /*   combining dot above right ˙ dot above */'|patch -p0
 </code>
 <code class="thtwo">chown_fn
 
@@ -3651,7 +3626,7 @@ cmake-toolchain_fn
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DWITH_GCC_VISIBILITY="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -DBUILD_TRANSLATIONS="OFF" \
     -Wno-dev \
@@ -3709,7 +3684,7 @@ git checkout gh-pages
         <p><a href="#dbus">&hellip; <span style="background: #E5F1FF;">dbus-tqt</span></a>
         <p><a href="#dbus_1">&hellip; <span style="background: #E5F1FF;">dbus-1-tqt</span></a>
         <p><a href="#libart">&hellip; <span style="background: #E5F1FF;">libart-lgpl</span></a>
-        <p><a href="#tqca_tls">&hellip; <span style="background: #E5F1FF;">tqca-tls</span></a>
+        <p><a href="#tqca">&hellip; <span style="background: #E5F1FF;">tqca</span></a>
         <p><a href="#tdelibs">&hellip; <span style="background: #E5F1FF;">tdelibs</span></a>
         <p><a href="#tdebase">&hellip; <span style="background: #E5F1FF;">tdebase</span></a>
         <p><a href="#tdeaddons">&hellip; tdeaddons</a>
