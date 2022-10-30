@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.0.12 have been verified for 64-bit arm only].
+[Edit: builds for R14.0.13 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -590,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.12</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.13</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -800,6 +800,11 @@ mkdir -p build-${PRGNAM}
 cd build-${PRGNAM}
 }
 
+mangzip_fn ()
+{
+find $PKG$INSTALL_TDE/man -type f -name "*.?" -exec gzip -9f {} \;
+}
+
 strip_fn ()
 {
 find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
@@ -953,9 +958,9 @@ sed -i '/phrasebooks/d' tools/linguist/linguist/linguist.pro
 sed -i '/templates/d' tools/designer/designer/designer.pro
 
 <span class="dastx">##</span> only need linux-g++
-mv mkspecs/linux-g++ ../
-rm -rf mkspecs/*
-mv ../linux-g++ mkspecs/
+(cd mkspecs
+GLOBIGNORE=linux-g++
+rm -rf *)
 </code>
 <span class="dastx">##</span> RPATH is to be set as $ORIGIN/../lib, so don't need absolute libs directory built in -
 <span class="dastx">##</span> Allow setting CC/CXX for linux-g++/qmake.conf -
@@ -968,18 +973,21 @@ mv ../linux-g++ mkspecs/
 @@ -29 +29 @@
 -QMAKE_CXX<span class="bkslt">\t</span><span class="bkslt">\t</span>= g++
 +QMAKE_CXX<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(COMPILER_CXX)
+@@ -40 +40 @@
+-QMAKE_INCDIR<span class="bkslt">\t\t</span>=
++QMAKE_INCDIR<span class="bkslt">\t\t</span>= $(QTDIR)/include/tqt
 @@ -42,2 +42,2 @@
 -QMAKE_INCDIR_X11<span class="bkslt">\t</span>= /usr/X11R6/include
 -QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/X11R6/lib
 +QMAKE_INCDIR_X11<span class="bkslt">\t</span>= /usr/include/X11
-+QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/lib$(LIBDIRSUFFIX)
++QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 @@ -45,3 +45,3 @@
 -QMAKE_LIBDIR_QT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(QTDIR)/lib
 -QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= /usr/X11R6/include
 -QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/X11R6/lib
-+QMAKE_LIBDIR_QT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(QTDIR)/lib$(LIBDIRSUFFIX)
++QMAKE_LIBDIR_QT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(QTDIR)/lib'"$LIBDIRSUFFIX"$'
 +QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= /usr/include/GL
-+QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib$(LIBDIRSUFFIX)
++QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 @@ -49,2 +49,2 @@
 -QMAKE_LINK<span class="bkslt">\t</span><span class="bkslt">\t</span>= g++
 -QMAKE_LINK_SHLIB<span class="bkslt">\t</span>= g++
@@ -999,21 +1007,24 @@ sed -i "s| /usr/lib| $SYSROOT/usr/lib$LIBDIRSUFFIX|" config.tests/{unix,x11}/*.t
 sed -i "s|\"/lib|\"$SYSROOT/lib$LIBDIRSUFFIX|" config.tests/unix/checkavail
 sed -i "s|/usr|$SYSROOT&amp;|" config.tests/unix/checkavail
 </code>
-<span class="dastx">##</span> Set up an arm mkspecs to use for this build where includes and libs paths are set to SYSROOT
+<span class="dastx">##</span> Set up an arm mkspecs to use for this build where the system includes and libs paths are set to SYSROOT
 <code class="thtwo">cp -a mkspecs/linux-g++ mkspecs/linux-arm-g++
 
 echo $'--- mkspecs/linux-arm-g++/qmake.conf
 +++ mkspecs/linux-arm-g++/qmake.conf
+@@ -8 +8 @@
+-CONFIG<span class="bkslt">\t\t\t</span>+= qt warn_on release incremental link_prl thread
++CONFIG<span class="bkslt">\t\t\t</span>+= qt warn_off release incremental link_prl thread
 @@ -42,2 +42,2 @@
 -QMAKE_INCDIR_X11<span class="bkslt">\t</span>= /usr/include/X11
--QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/lib$(LIBDIRSUFFIX)
+-QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 +QMAKE_INCDIR_X11<span class="bkslt">\t</span>= $(SYSROOT)/usr/include/X11
-+QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib$(LIBDIRSUFFIX)
++QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib'"$LIBDIRSUFFIX"$'
 @@ -46,2 +46,2 @@
 -QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= /usr/include/GL
--QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib$(LIBDIRSUFFIX)
+-QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 +QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/include/GL
-+QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib$(LIBDIRSUFFIX)' | patch -p0
++QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib'"$LIBDIRSUFFIX" | patch -p0
 </code>
 <span class="dastx">##</span> Set -platform to arm so that tqmoc is built as an arm binary for installation on RPi3.
 <span class="dastx">##</span> Set -rpath so that libtqt-mt.so.3 can be found during the build
@@ -1082,9 +1093,13 @@ rm tqdesigner)
 rm libtqteditor*
 rm libtqassistantclient*)
 </code>
-<span class="dastx">##</span> remove sysroot path from RPi3 package
+<span class="dastx">##</span> remove sysroot references from RPi3 package
 <code class="thtwo">sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/libtqt-mt.la
 sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig/tqt-mt.pc
+
+(cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/
+rm -rf linux-arm-g++
+ln -sf linux-g++ default)
 </code>
 <code class="thtwo">mkdir -p $PKG/etc/profile.d
 
@@ -1183,6 +1198,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$TQTDIR \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DQT_PREFIX_DIR=$TQTDIR \
     -DQT_INCLUDE_DIR=$TQTDIR/include/tqt \
@@ -1254,7 +1270,9 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_ALSA="ON" \
     -DWITH_AUDIOFILE="ON" \
     -DWITH_ESOUND="OFF" \
@@ -1263,6 +1281,7 @@ cmake \
     -DWITH_MAD="ON" \
     -DWITH_SNDIO="OFF" \
     -DWITH_VORBIS="ON" \
+    -DBUILD_DOC="ON" \
     -Wno-dev \
     ..
 
@@ -1271,6 +1290,8 @@ make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove sysroot path from package
 sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig/artsc.pc
+
+mangzip_fn
 
 strip_fn
 
@@ -1322,6 +1343,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -Wno-dev \
     ..
@@ -1379,6 +1401,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DWITH_GCC_VISIBILITY="ON" \
     -Wno-dev \
@@ -1436,6 +1459,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DMAN_INSTALL_DIR=/usr/man \
     -DWITH_GCC_VISIBILITY="ON" \
@@ -1445,6 +1469,10 @@ cmake \
 
 make $NUMJOBS
 make DESTDIR=$PKG install
+
+<span class="dastx">##</span> in shell so that INSTALL_TDE for TDE isn't overridden
+(INSTALL_TDE=/usr
+mangzip_fn)
 
 strip_fn
 
@@ -1494,6 +1522,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DBUILD_TQCA="ON" \
     -DBUILD_TQCA_TLS="ON" \
@@ -1590,7 +1619,7 @@ sed -i "s|\"trinity\"|\"$PLUGIN_INSTALL_DIR\"|"  tdecore/tdeapplication.cpp || t
 +    padding:0px 1px;
      -khtml-border-radius: 3px;
 <span class="dastx">#</span>
-<span class="dastx">##</span> for the <keycap> tags
+<span class="dastx">##</span> for the &lt;keycap> tags
 @@ -199 +199 @@
 -    background-color: #DFDFFF;
 +    background-color: #efefef;
@@ -1606,7 +1635,7 @@ sed -i "s|\"trinity\"|\"$PLUGIN_INSTALL_DIR\"|"  tdecore/tdeapplication.cpp || t
 -    border 2px solid gray;
 +    border: 2px solid gray;
 <span class="dastx">#</span>
-<span class="dastx">##</span> left justify text in the <para> tags in index.docbook
+<span class="dastx">##</span> left justify text in the &lt;para> tags in index.docbook
 --- doc/common/tde-default.css
 +++ doc/common/tde-default.css
 @@ -211 +211 @@
@@ -1616,6 +1645,23 @@ sed -i "s|\"trinity\"|\"$PLUGIN_INSTALL_DIR\"|"  tdecore/tdeapplication.cpp || t
 -  text-align: justify; 
 +  text-align: left;
 EOF
+</code>
+<span class="dastx">##</span> Restore diff.xml +/- colours and match markdown.xml diff display
+<code class="thtwo">echo $'--- kate/data/diff.xml
++++ kate/data/diff.xml
+@@ -111,2 +111,2 @@
+-      &lt;itemData name="Removed line"  defStyleNum="dsString" backgroundColor="#ffeef0"/>
+-      &lt;itemData name="Added line"  defStyleNum="dsOthers" backgroundColor="#e6ffed"/>
++      &lt;itemData name="Removed line"  defStyleNum="dsString" color="#FF0000"/>
++      &lt;itemData name="Added line"  defStyleNum="dsOthers" color="#0000FF"/>
+--- kate/data/markdown.xml
++++ kate/data/markdown.xml
+@@ -149,2 +149,2 @@
+-<span class="bkslt">\t\t\t</span>&lt;itemData name="difflineremove" defStyleNum="dsString" backgroundColor="#ffeef0" />
+-<span class="bkslt">\t\t\t</span>&lt;itemData name="difflineadd" defStyleNum="dsOthers" backgroundColor="#e6ffed" />
++<span class="bkslt">\t\t\t</span>&lt;itemData name="difflineremove" defStyleNum="dsNormal" backgroundColor="#eeeeee" color="#FF0000" />
++<span class="bkslt">\t\t\t</span>&lt;itemData name="difflineadd" defStyleNum="dsNormal" backgroundColor="#eeeeee" color="#0000FF" />
+' | patch -p0
 </code>
 <span class="dastx">##</span> Build without spell checker installed
 <span class="dastx">##</span> Otherwise, install Aspell, or Hspell, or Ispell &hellip;
@@ -1652,7 +1698,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DCMAKE_SKIP_RPATH="OFF" \
     -DCMAKE_INSTALL_RPATH=$INSTALL_TDE/lib$LIBDIRSUFFIX \
@@ -1823,6 +1869,7 @@ sed -i '20s|^|#include &lt;linux/limits.h>|' kdesktop/lock/lockprocess.cpp
 </code>
 <span class="dastx">##</span> Configuration files are in /etc/tde, and plugins in $INSTALL_TDE/lib$LIBDIRSUFFIX/tde
 <code class="thtwo">sed -i "s|trinity|$PLUGIN_INSTALL_DIR|g" tdm/config.def || true
+sed -i "s|/etc/trinity|$INSTALL_TDE/share/config|" tdm/kfrontend/gentdmconf.c || true
 sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" tdm/kfrontend/gentdmconf.c || true
 sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" kcontrol/hwmanager/devicepropsdlg.cpp || true
 sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" tdeioslave/trash/testtrash.cpp || true
@@ -1870,9 +1917,10 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_ARTS="ON" \
     -DWITH_ELFICON="OFF" \
     -DWITH_GCC_VISIBILITY="ON" \
@@ -1971,6 +2019,8 @@ make DESTDIR=$PKG install
 
 <span class="dastx">##</span> remove sysroot path from package
 sed -i "s|$SYSROOT||" $PKG$INSTALL_TDE/bin/khc_htsearch.pl
+
+mangzip_fn
 
 strip_fn
 </code>
@@ -2313,14 +2363,16 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
-    -DSYSCONF_INSTALL_DIR=$SYS_CNF_DIR \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_ARTS="ON" \
     -DWITH_SDL="ON" \
     -DWITH_BERKELEY_DB="ON" \
     -DWITH_XMMS="OFF" \
     -DWITH_TEST="OFF" \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -DBUILD_ATLANTIKDESIGNER=${ATLANTIKDESIGNER:-"OFF"} \
     -DBUILD_KADDRESSBOOK_PLUGINS=${KADDRESSBOOK_PLUGINS:-"OFF"} \
@@ -2338,6 +2390,8 @@ cmake \
 
 make $NUMJOBS
 make DESTDIR=$PKG install
+
+mangzip_fn
 
 strip_fn
 
@@ -2399,8 +2453,10 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_DPMS="ON" \
     -DWITH_XSCREENSAVER="OFF" \
     -DWITH_SENSORS="ON" \
@@ -2438,6 +2494,8 @@ cmake \
 
 make $NUMJOBS
 make DESTDIR=$PKG install
+
+mangzip_fn
 
 strip_fn
 
@@ -2496,13 +2554,17 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DWITH_GCC_VISIBILITY="ON" \
     -DWITH_ALL_INCLUDED_XSCREENSAVERS="OFF" \
     -DWITH_ARTS="ON" \
     -DWITH_XSCREENSAVER="OFF" \
     -DWITH_LIBART="ON" \
     -DWITH_OPENGL="ON" \
+    -DBUILD_DOC="ON" \
     -DBUILD_EMOTICONS="ON" \
     -DBUILD_ICEWM_THEMES="ON" \
     -DBUILD_ICON_THEMES="ON" \
@@ -2511,12 +2573,15 @@ cmake \
     -DBUILD_KWORLDCLOCK="ON" \
     -DBUILD_SOUNDS="ON" \
     -DBUILD_STYLES="ON" \
+    -DBUILD_TDEASCIIQUARIUM="ON" \
     -DBUILD_WALLPAPERS="ON" \
     -Wno-dev \
     ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
+
+mangzip_fn
 
 strip_fn
 
@@ -3086,8 +3151,10 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_T1LIB="OFF" \
     -DWITH_PAPER="OFF" \
     -DWITH_TIFF="OFF" \
@@ -3120,6 +3187,8 @@ cmake \
 
 make $NUMJOBS
 make DESTDIR=$PKG install
+
+mangzip_fn
 
 strip_fn
 
@@ -3177,6 +3246,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
@@ -3227,6 +3297,7 @@ makepkg_fn
 PRGNAM=tdmtheme
 VERSION=$TDE_VERSION
 BUILD=$BUILD
+I18N=$I18N
 TMP=/tmp/build
 rm -rf $TMP
 PKG=$TMP/package-$PRGNAM
@@ -3236,12 +3307,16 @@ mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
 
+<span class="dastx">##</span> set support for additional language(s) as per I18N variable
+<span class="dastx">##</span> but only for languages available with this package
+<span class="dastx">##</span> [need to export LINGUAS to set it as an environment variable for cmake]
+[[ $I18N ]] &amp;&amp; TRANS=ON &amp;&amp; export LINGUAS=$I18N
+
 chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
-<span class="dastx">##</span> all locales and html docs built by default, actually only en_US
 cmake-toolchain_fn
 cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
@@ -3254,11 +3329,12 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
-    -DBUILD_TRANSLATIONS="ON" \
+    -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
     -Wno-dev \
     ..
 
@@ -3336,6 +3412,7 @@ cmake \
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
@@ -3620,6 +3697,7 @@ cmake-toolchain_fn
     -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -DBUILD_TRANSLATIONS="OFF" \
