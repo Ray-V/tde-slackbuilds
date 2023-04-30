@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.0.13 have been verified for 64-bit arm only].
+[Edit: builds for R14.1.0 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -590,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.0.13</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.0</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -913,7 +913,7 @@ rm -rf /tmp/x86*
 </code>
 <span class="dastx">##</span> Add an RPATH so meinproc will use these libraries
 <code class="thtwo">patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/meinproc
-patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/libtdecore.so.14.0.0
+patchelf --force-rpath --set-rpath $SYSROOT/x86 $SYSROOT/x86/libtdecore.so.14.1.0
 </code>
 <span class="dastx">##</span> Copy the x86 meinproc to the TDE installation directory - it's fussy about its location, producing parsing errors otherwise.
 <code class="thtwo">mkdir -p $INSTALL_TDE/bin
@@ -975,17 +975,17 @@ rm -rf *)
 +QMAKE_CXX<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(COMPILER_CXX)
 @@ -40 +40 @@
 -QMAKE_INCDIR<span class="bkslt">\t\t</span>=
-+QMAKE_INCDIR<span class="bkslt">\t\t</span>= $(QTDIR)/include/tqt
++QMAKE_INCDIR<span class="bkslt">\t\t</span>= $(TQTDIR)/include/tqt
 @@ -42,2 +42,2 @@
 -QMAKE_INCDIR_X11<span class="bkslt">\t</span>= /usr/X11R6/include
 -QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/X11R6/lib
 +QMAKE_INCDIR_X11<span class="bkslt">\t</span>= /usr/include/X11
 +QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 @@ -45,3 +45,3 @@
--QMAKE_LIBDIR_QT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(QTDIR)/lib
+-QMAKE_LIBDIR_TQT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(TQTDIR)/lib
 -QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= /usr/X11R6/include
 -QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/X11R6/lib
-+QMAKE_LIBDIR_QT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(QTDIR)/lib'"$LIBDIRSUFFIX"$'
++QMAKE_LIBDIR_TQT<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(TQTDIR)/lib'"$LIBDIRSUFFIX"$'
 +QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= /usr/include/GL
 +QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 @@ -49,2 +49,2 @@
@@ -1105,7 +1105,7 @@ ln -sf linux-g++ default)
 
 echo '#!'"/bin/sh
 # Environment path variable for the tQt package.
-export QTDIR=$TQTDIR
+export TQTDIR=$TQTDIR
 " > $PKG/etc/profile.d/tqt3.sh
 
 chmod 755 $PKG/etc/profile.d/tqt3.sh
@@ -1201,11 +1201,9 @@ cmake \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DQT_PREFIX_DIR=$TQTDIR \
-    -DQT_INCLUDE_DIR=$TQTDIR/include/tqt \
+    -DTQT_INCLUDE_DIR=$TQTDIR/include/tqt \
     -DMOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -DQT_VERSION=3 \
-    -DWITH_QT3="OFF" \
-    -DWITH_QT4="OFF" \
     -Wno-dev \
     ..
 
@@ -1924,7 +1922,6 @@ cmake \
     -DWITH_ARTS="ON" \
     -DWITH_ELFICON="OFF" \
     -DWITH_GCC_VISIBILITY="ON" \
-    -DWITH_HAL="OFF" \
     -DWITH_I8K="OFF" \
     -DWITH_LDAP="OFF" \
     -DWITH_LIBART="ON" \
@@ -2489,6 +2486,7 @@ cmake \
     -DBUILD_KTIMER="ON" \
     -DBUILD_TDEWALLET="ON" \
     -DBUILD_SUPERKARAMBA="ON" \
+    -DBUILD_TDEFILEREPLACE="ON" \
     -Wno-dev \
     ..
 
@@ -3133,8 +3131,68 @@ untar_fn
 <code class="thtwo">sed -i 's|COMMAND squeeze|COMMAND ./squeeze|' kdvi/CMakeLists.txt
 </code>
 <code class="thtwo">chown_fn
-
-cd_builddir_fn
+</code>
+<span class="dastx">##</span> option to build without the dedicated KolourPaint button in ksnapshot
+<code class="green thtwob">echo $'--- ksnapshot/ksnapshot.cpp
++++ ksnapshot/ksnapshot.cpp
+@@ -84 +83,0 @@
+-    connect(mainWidget, TQT_SIGNAL(openWithKPClicked()), TQT_SLOT(slotOpenWithKP()));
+@@ -135,6 +133,0 @@
+-    // Check for KolourPaint availability
+-    KService::Ptr kpaint = KService::serviceByDesktopName("kolourpaint");
+-    if (!kpaint) {
+-        mainWidget->btnOpenWithKP->hide();
+-    }
+-
+@@ -395,7 +388,0 @@
+-void KSnapshot::slotOpenWithKP() {
+-    KService::Ptr kpaint = KService::serviceByDesktopName("kolourpaint");
+-    if (kpaint) {
+-        openWithExternalApp(*kpaint);
+-    }
+-}
+-
+--- ksnapshot/ksnapshot.h
++++ ksnapshot/ksnapshot.h
+@@ -114 +113,0 @@
+-  void slotOpenWithKP();
+--- ksnapshot/ksnapshotwidget.ui
++++ ksnapshot/ksnapshotwidget.ui
+@@ -245,14 +244,0 @@
+-                &lt;widget class="KPushButton">
+-                    &lt;property name="name">
+-                        &lt;cstring>btnOpenWithKP&lt;/cstring>
+-                    &lt;/property>
+-                    &lt;property name="text">
+-                        &lt;string>Open in &amp;amp;KolourPaint&lt;/string>
+-                    &lt;/property>
+-                    &lt;property name="whatsThis" stdset="0">
+-                        &lt;string>Click this button to edit the snapshot in KolourPaint.&lt;/string>
+-                    &lt;/property>
+-                    &lt;property name="iconSet">
+-                        &lt;iconset>"kolourpaint"&lt;/iconset>
+-                    &lt;/property>
+-                &lt;/widget>
+@@ -320,6 +305,0 @@
+-    &lt;connection>
+-        &lt;sender>btnOpenWithKP&lt;/sender>
+-        &lt;signal>clicked()&lt;/signal>
+-        &lt;receiver>KSnapshotWidget&lt;/receiver>
+-        &lt;slot>slotOpenWithKPClicked()&lt;/slot>
+-    &lt;/connection>
+@@ -365 +344,0 @@
+-    &lt;signal>openWithKPClicked()&lt;/signal>
+@@ -375 +353,0 @@
+-    &lt;slot access="protected" specifier="non virtual">slotOpenWithKPClicked()&lt;/slot>
+--- ksnapshot/ksnapshotwidget.ui.h
++++ ksnapshot/ksnapshotwidget.ui.h
+@@ -140,4 +139,0 @@
+-void KSnapshotWidget::slotOpenWithKPClicked()
+-{
+-    emit openWithKPClicked();
+-}' |patch -p0
+</code>
+<code class="thtwo">cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
 <span class="dastx">##</span> If imlib is installed, include kuickshow:
@@ -3155,7 +3213,6 @@ cmake \
     -DLIB_SUFFIX=$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
-    -DWITH_T1LIB="OFF" \
     -DWITH_PAPER="OFF" \
     -DWITH_TIFF="OFF" \
     -DWITH_OPENEXR="OFF" \
@@ -3497,6 +3554,8 @@ make DESTDIR=$PKG install
 sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/t*/*.la
 sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/t*/*.la
 
+mangzip_fn
+
 strip_fn
 
 mkdir_install_fn
@@ -3728,6 +3787,82 @@ Translations are also available with the x86_64 build.
 <br></div>
 <!-- kvkbd - end -->
 
+<p>
+<!-- tdebluez - start -->
+<a name="close_tdebluez"></a>
+<br>
+<span class="tabs"><a href="#tdebluez">&hellip; tdebluez</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="tdebluez" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tdebluez">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=tdebluez
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+untar_fn
+
+<span class="dastx">##</span> set support for additional language(s) as per I18N variable
+<span class="dastx">##</span> but only for languages available with this package
+<span class="dastx">##</span> [need to export LINGUAS to set it as an environment variable for cmake]
+[[ $I18N ]] &amp;&amp; TRANS=ON &amp;&amp; export LINGUAS=$I18N
+
+<span class="dastx">##</span> path to configuration file
+sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" {README.md,doc/en/tdebluez.docbook}
+
+chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
+    -DWITH_GCC_VISIBILITY="ON" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
+    -DBUILD_LIBTDEBLUEZ="ON" \
+    -DBUILD_TDEIOSLAVE="ON" \
+    -Wno-dev \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+strip_fn
+
+mkdir_install_fn
+
+doinst_sh_fn
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_tdebluez">close</a></span>
+</div>
+<br></div>
+<!-- tdebluez - end -->
+
 <br>
 <span class="comment">
 The source for this page is in the gh-pages branch of <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>:
@@ -3769,6 +3904,7 @@ git checkout gh-pages
         <p><a href="#knemo">&hellip; knemo</a>
         <p><a href="#krusader">&hellip; krusader</a>
         <p><a href="#kvkbd">&hellip; kvkbd</a>
+        <p><a href="#tdebluez">&hellip; tdebluez</a>
       </div>
     </li>
 </ul>
