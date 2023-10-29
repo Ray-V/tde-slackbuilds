@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.1.0 have been verified for 64-bit arm only].
+[Edit: builds for R14.1.1 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -590,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.0</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.1</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -1714,7 +1714,6 @@ cmake \
     -DWITH_ELFICON="OFF" \
     -DWITH_GAMIN="OFF" \
     -DWITH_GCC_VISIBILITY="ON" \
-    -DWITH_HAL="OFF" \
     -DWITH_HSPELL="OFF" \
     -DWITH_IMAGETOPS_BINARY="OFF" \
     -DWITH_INOTIFY="ON" \
