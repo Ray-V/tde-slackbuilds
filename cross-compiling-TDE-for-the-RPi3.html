@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.1.1 have been verified for 64-bit arm only].
+[Edit: builds for R14.1.2 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -590,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.1</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.2</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -752,6 +752,8 @@ installpkg l/zstd-*.txz
 installpkg d/intltool-*.txz
 <span class="dastx">##</span> + for 14.0.10+ builds
 installpkg ap/lm_sensors-*.txz
+<span class="dastx">##</span> + for 14.1.2+ builds for tdebase
+x/xkeyboard-config-*-noarch-*.txz
 
 <span class="dastx">##</span> remove .la files and any links to them - they can cause a problem because the paths are hard-coded to /usr/... and so pick up the build machine libs rather than the libs in SYSROOT
 find $SYSROOT/usr/lib$LIBDIRSUFFIX -type l -name \*.la -exec rename .la .la-bak {} \;
@@ -1013,8 +1015,8 @@ sed -i "s|/usr|$SYSROOT&amp;|" config.tests/unix/checkavail
 echo $'--- mkspecs/linux-arm-g++/qmake.conf
 +++ mkspecs/linux-arm-g++/qmake.conf
 @@ -8 +8 @@
--CONFIG<span class="bkslt">\t\t\t</span>+= qt warn_on release incremental link_prl thread
-+CONFIG<span class="bkslt">\t\t\t</span>+= qt warn_off release incremental link_prl thread
+-CONFIG<span class="bkslt">\t\t\t</span>+= qt warn_on release incremental link_prl
++CONFIG<span class="bkslt">\t\t\t</span>+= qt warn_off release incremental link_prl
 @@ -42,2 +42,2 @@
 -QMAKE_INCDIR_X11<span class="bkslt">\t</span>= /usr/include/X11
 -QMAKE_LIBDIR_X11<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
@@ -3135,7 +3137,7 @@ untar_fn
 <code class="green thtwob">echo $'--- ksnapshot/ksnapshot.cpp
 +++ ksnapshot/ksnapshot.cpp
 @@ -84 +83,0 @@
--    connect(mainWidget, TQT_SIGNAL(openWithKPClicked()), TQT_SLOT(slotOpenWithKP()));
+-    connect(mainWidget, TQ_SIGNAL(openWithKPClicked()), TQ_SLOT(slotOpenWithKP()));
 @@ -135,6 +133,0 @@
 -    // Check for KolourPaint availability
 -    KService::Ptr kpaint = KService::serviceByDesktopName("kolourpaint");
@@ -3231,7 +3233,7 @@ cmake \
     -DBUILD_KGAMMA="ON" \
     -DBUILD_KGHOSTVIEW="ON" \
     -DBUILD_TDEICONEDIT="ON" \
-    -DBUILD_KMRML="ON" \
+    -DBUILD_KMRML="OFF" \
     -DBUILD_KOLOURPAINT="ON" \
     -DBUILD_KPOVMODELER="ON" \
     -DBUILD_KRULER="ON" \
@@ -3645,13 +3647,13 @@ echo $'--- src/MainWidget.cpp
 echo $'--- src/MainWidget.cpp
 +++ src/MainWidget.cpp
 @@ -515 +515 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n("Font ..."), this, TQT_SLOT ( chooseFont() ) );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n("Font"), this, TQT_SLOT ( chooseFont() ) );
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n("Font ..."), this, TQ_SLOT ( chooseFont() ) );
++<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n("Font"), this, TQ_SLOT ( chooseFont() ) );
 @@ -520,0 +521 @@
 +<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertSeparator();
 @@ -522 +523 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Keys color"), this, TQT_SLOT ( chooseKeysColor() ) );
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Key color"), this, TQT_SLOT ( chooseKeysColor() ) );'|patch -p0
+-<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Keys color"), this, TQ_SLOT ( chooseKeysColor() ) );
++<span class="bkslt">\t</span><span class="bkslt">\t</span>m->insertItem ( i18n ("Key color"), this, TQ_SLOT ( chooseKeysColor() ) );'|patch -p0
 
 <span class="dastx">##</span> key spacing &amp; sizing
 echo $'--- src/MainWidget.cpp
@@ -3725,7 +3727,7 @@ echo $'--- src/MainWidget.cpp
 <span class="dastx">##</span> generate keycode on click rather than wait for next key-click
 @@ -318 +318,2 @@
 -<span class="bkslt">\t</span>mod_keys.append ( lwin );
-+<span class="bkslt">\t</span>connect ( lwin, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
++<span class="bkslt">\t</span>connect ( lwin, TQ_SIGNAL ( keyClick ( unsigned int ) ), this, TQ_SLOT ( keyPress ( unsigned int ) ) );
 +<span class="bkslt">\t</span>other_keys.append( lwin );
 <span class="dastx">#</span>
 <span class="dastx">##</span> donʹt lock the RWin button
@@ -3735,7 +3737,7 @@ echo $'--- src/MainWidget.cpp
 <span class="dastx">##</span> generate keycode on click rather than wait for next key-click
 @@ -355 +356,2 @@
 -<span class="bkslt">\t</span>mod_keys.append ( rwin );
-+<span class="bkslt">\t</span>connect ( rwin, TQT_SIGNAL ( keyClick ( unsigned int ) ), this, TQT_SLOT ( keyPress ( unsigned int ) ) );
++<span class="bkslt">\t</span>connect ( rwin, TQ_SIGNAL ( keyClick ( unsigned int ) ), this, TQ_SLOT ( keyPress ( unsigned int ) ) );
 +<span class="bkslt">\t</span>other_keys.append( rwin );'|patch -p0
 </code>
 <code class="thtwo">chown_fn
@@ -3862,6 +3864,87 @@ makepkg_fn
 <br></div>
 <!-- tdebluez - end -->
 
+<p>
+<!-- krename - start -->
+<a name="close_krename"></a>
+<br>
+<span class="tabs"><a href="#krename">&hellip; krename</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;</a>
+</span>
+<div id="krename" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_krename">close</a></span>
+
+<code class="thtwo">cd /
+PRGNAM=krename
+VERSION=$TDE_VERSION
+BUILD=$BUILD
+TMP=/tmp/build
+rm -rf $TMP
+PKG=$TMP/package-$PRGNAM
+OUTPUT=/tmp
+mkdir -p $PKG
+mkdir $TMP/tmp-$PRGNAM
+
+untar_fn
+
+sed -i 's| "TQt: 3.3.5"||' doc/man/krename.1
+sed -i 's|^TQt.*$|krename \- a batch file renamer|' doc/man/krename.1
+sed -i 's|TQt:|krename|' doc/man/krename.1
+sed -i '/KDE: 3.4.2/d' doc/man/krename.1
+sed -i '/KRename: 3.0.8/d' doc/man/krename.1
+sed -i 's|info TQt|info krename|' doc/man/krename.1
+
+<span class="dastx">##</span> set support for additional language(s) as per I18N variable
+<span class="dastx">##</span> but only for languages available with this package
+<span class="dastx">##</span> [need to export LINGUAS to set it as an environment variable for cmake]
+[[ $I18N ]] &amp;&amp; TRANS=ON &amp;&amp; export LINGUAS=$I18N
+
+chown_fn
+
+cd_builddir_fn
+
+<span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DWITH_GCC_VISIBILITY="ON" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
+    -Wno-dev \
+    ..
+
+make $NUMJOBS
+make DESTDIR=$PKG install
+
+mangzip_fn
+
+strip_fn
+
+mkdir_install_fn
+
+doinst_sh_fn
+
+makepkg_fn
+
+<span class="dastx">##</span> don't need to install this
+<span class="dastx">##</span> installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
+<span class="dastx">##</span> ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
+</code>
+
+<span class="tabs"><a href="#close_krename">close</a></span>
+</div>
+<br></div>
+<!-- krename - end -->
+
 <br>
 <span class="comment">
 The source for this page is in the gh-pages branch of <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>:
@@ -3904,6 +3987,7 @@ git checkout gh-pages
         <p><a href="#krusader">&hellip; krusader</a>
         <p><a href="#kvkbd">&hellip; kvkbd</a>
         <p><a href="#tdebluez">&hellip; tdebluez</a>
+        <p><a href="#krename">&hellip; krename</a>
       </div>
     </li>
 </ul>
