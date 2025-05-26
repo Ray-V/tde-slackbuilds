@@ -25,7 +25,7 @@
 #
 # 
 PRGNAM=xmedcon
-VERSION=0.25.1
+VERSION=0.25.3
 BUILD=${BUILD:-1}
 TAG=${TAG:-}
 
@@ -66,7 +66,6 @@ strip_fn
 
 mkdir_install_fn
 
-mv $PKG/usr/etc $PKG/
 mv $PKG/etc/xmedcon.css $PKG/etc/xmedcon.css.new
 
 mkdir -p $PKG/usr/share/pixmaps

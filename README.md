@@ -3,7 +3,7 @@
 
 ---
 ***Build TDE [Trinity Desktop Environment]***  
-.. for Slackware [x86_64/i586+/arm], and [Slarm64](http://slarm64.org/download.html) [aarch64].  
+.. for Slackware [x86_64/i586+/arm], and [Slarm64](https://slackware.uk/slarm64/) [aarch64].  
 See [*Cross compiling for RPi3*](#xcompiling) for building for arm_hf and aarch64.
 
 For a native build, run **./BUILD-TDE.sh** - a dialog based script with a series of screens for user input,  

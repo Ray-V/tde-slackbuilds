@@ -24,7 +24,7 @@
 #   SUCH DAMAGE.
 
 PRGNAM=inkscape
-VERSION=1.4.1
+VERSION=1.4.2
 DC_VERSION=3.3.1
 BUILD=${BUILD:-1}
 
@@ -138,10 +138,13 @@ for locale in $I18N
  [[ -s share/screens/start-welcome-text.$locale.svg ]] && I18N_SVG="$I18N_SVG start-welcome-text.$locale.svg" && COUNT_TEXT=$[${COUNT_TEXT:-}+1]
 COUNT_I18N=$[${COUNT_I18N:-}+1]
  done
-[[ ${locas:-} ]] && NLS=ON
+[[ $locas ]] && NLS=ON
 #
-pos=$(echo $locas | sed 's| |.po |g;s|$|.po|')
-sed -i "s|*.po|$pos|" po/CMakeLists.txt
+pos=$(echo $locas | sed 's| |.po |g;s|$|.po|' | tr ' ' ':')
+(cd po
+GLOBIGNORE=$pos
+rm *.po
+)
 #
 tuts=$(echo $tuts|sed 's|share/tutorials/||g')
 sed -i "s|GLOB.*$|GLOB _FILES README $tuts)|" share/tutorials/CMakeLists.txt
