@@ -7,7 +7,7 @@
 See [*Cross compiling for RPi3*](#xcompiling) for building for arm_hf and aarch64.
 
 For a native build, run **./BUILD-TDE.sh** - a dialog based script with a series of screens for user input,  
-which will build the release version 14.1.4, or the development versions 14.1.x/14.2.0.
+which will build the release version 14.1.5, or the development versions 14.1.x/14.2.0.
 
 [<img src="https://ray-v.github.io/TDE-version.png">](https://ray-v.github.io/TDE-version.png "TDE version")  
 ... select TDE version
@@ -19,7 +19,7 @@ Information about dependencies for some packages has been added at the bottom of
 
 Only building the packages is a global option. It therefore can't be used where the build list includes packages which will need to be installed as dependencies for other packages in the build list [for example tdesdk needs tdepim to be installed].
 
-14.1.4 source archives will be downloaded from a geoIP located mirror site, or the development sources 14.1.x/14.2.0 cloned or updated from trinitydesktop gitea.  
+14.1.5 source archives will be downloaded from a geoIP located mirror site, or the development sources 14.1.x/14.2.0 cloned or updated from trinitydesktop gitea.  
 Downloading can be done pre-build [useful for an off-line build], or during the build.
 
 If you're curious about what this might involve, [take a look at a sample build set up](https://ray-v.github.io/A_typical_TDE_SlackBuild.html).
@@ -33,7 +33,7 @@ URLs for this and other locations are @ https://www.trinitydesktop.org/mirrorsta
 * BUILD= - sets the package build identifier, overriding the SlackBuild default of 1
 * GCC_VIS=0 - override setting gcc visibility if it has been set ON in tdelibs
 * FEAT= - test a pre-merge feature for development builds - see notes in get-source.sh
-* build_regextester=[yp] - build the regex tester from the tqt3 example - see the tqt3 README
+* build_regextester=[yp] - build the regex tester from the tqt example - see the tqt README
 * mailmerge=n - build kword without mailmerge - see the koffice README and SlackBuild
 * KP_BTN=n - build ksnapshot without the dedicated KolourPaint button - see the tdegraphics README and SlackBuild
 * W_SUDO=ON - set backends for using sudo as the super user command [default is su]
@@ -67,7 +67,7 @@ See the READMEs in Core/tdeedu, Apps/k3b, Apps/klamav, and Misc/inkscape for det
 
 ***Required packages*** for a basic working TDE are:  
 ```
-Deps/tqt3
+Deps/tqt
 Deps/tqtinterface
 Deps/arts
 Deps/dbus-tqt
@@ -77,7 +77,7 @@ Deps/libart-lgpl
 Core/tdelibs
 Core/tdebase
 ```
-The cmake-trinity package is downloaded with the first archive, usually tqt3.
+The cmake-trinity package is downloaded with the first archive, usually tqt.
 
 ---
 
@@ -102,7 +102,8 @@ Once any git repository has been cloned, further downloads are updates only [*[2
 The git repositories are cloned to 'src/cgit'
 
 ---
-<a id="xcompiling"></a>***Cross compiling for RPi3***
+<a id="xcompiling"></a>
+***Cross compiling for RPi3***
 
 Cross compiling a number of packages for the Raspberry Pi3 based on these scripts is detailed in the html page in the gh-pages branch:
 ```
@@ -128,7 +129,8 @@ Includes:
 
 [1] TDM may need some manual setting up - see Core/tdebase/README, which can also be viewed while running ./BUILD-TDE.sh if tdebase is selected.
 
-<a id="git_updates"></a>[2] The i18n downloads with wget can't be updated because cgit produces 'current time' timestamps. The consequence is that if tde-i18n-$lang is a part of the build after its initial download, it will be downloaded again. As updates are infrequent, once built, there will probably be no need to do so again and so tde-i18n for a particular language will probably only be run once. On that basis I don't see this being a significant issue.
+<a id="git_updates"></a>
+[2] The i18n downloads with wget for development builds can't be updated because cgit produces 'current time' timestamps. The consequence is that if tde-i18n-$lang is a part of the build after its initial download, it will be downloaded again. As updates are infrequent, once built, there will probably be no need to do so again and so tde-i18n for a particular language will probably only be run once. On that basis I don't see this being a significant issue.
 
 [3] The Misc directory contains SlackBuilds for software that might already be installed from other sources. Please check because any misc builds selected here could overwrite them.
 

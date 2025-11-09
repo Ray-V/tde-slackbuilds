@@ -1,4 +1,4 @@
-There is an option to build the regex tester included in the tqt3/examples/regexptester directory.
+There is an option to build the regex tester included in the tqt.../examples/regexptester directory.
 
 The patch is to expand the 'Match' row vertically to enable multiline matches to be viewed.
 
@@ -25,5 +25,5 @@ For an introduction to regex, from a konsole:
  'khelpcenter help:/kate/regular-expressions.html'
 
 Guidance on what the tqt regex engine supports is given in ntqregexp.html which will be installed to:
- '<TDE-installation-directory>/doc/tqt3-<tde-version>/ntqregexp.html'
+ '<TDE-installation-directory>/doc/tqt-<tde-version>/ntqregexp.html'
  

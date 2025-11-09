@@ -101,7 +101,7 @@ Set the version of TDE to be built.
  
 " \
 13 75 3 \
-"14.1.4" "the R14.1.4 release - source from archives" \
+"14.1.5" "the R14.1.5 release - source from archives" \
 "14.1.x" "next release preview - source from Trinity git" \
 "14.2.0" "R14.2.0 development - source from Trinity git" \
 2> $TMPVARS/TDEVERSION
@@ -236,7 +236,7 @@ dialog --cr-wrap --nocancel --no-shadow --colors --help-button --help-label "REA
  Multiple selections may be made - space separated.
 
  Build language packages/support for any of:
-\Zb\Z6af ar az be bg bn br bs ca cs csb cy da de el en_GB eo es es_AR et eu fa fi fr fy ga gl he hi hr hu is it ja ka kk km ko lt lv mk mn ms nb nds nl nn pa pl pt pt_BR ro ru rw se sk sl sr sr@Latn ss sv ta te tg th tr uk uz uz@cyrillic vi wa zh_CN zh_TW\Zn
+\Zb\Z6af ar az be bg bn br bs ca cs csb cy da de el en_GB eo es es_AR et eu fa fi fr fy ga gl he hi hr hu ia is it ja ka kk km ko lt lv mk mn ms nb nds nl nn pa pl pt pt_BR ro ru rw se sk sl sr sr@Latn ss sv ta te tg th tr uk uz uz@cyrillic vi wa zh_CN zh_Hans zh_TW\Zn
  
 " \
 25 75 \
@@ -322,8 +322,8 @@ Look out for messages in the bottom line of the screen, especially relating to d
 
 Non-TDE apps are in the Misc category and don't need the \Zb\Zr\Z4R\Znequired TDE packages." \
 17 85 0 \
-"Deps/tqt3" "\Zb\Zr\Z4R\Zn The Qt package for TDE" off "\Zb\Z6  \Zn" \
-"Deps/tqtinterface" "\Zb\Zr\Z4R\Zn TDE bindings to tqt3." off "\Zb\Z6  \Zn" \
+"Deps/tqt" "\Zb\Zr\Z4R\Zn The Qt package for TDE" off "\Zb\Z6  \Zn" \
+"Deps/tqtinterface" "\Zb\Zr\Z4R\Zn TDE bindings to tqt." off "\Zb\Z6  \Zn" \
 "Deps/arts" "\Zb\Zr\Z4R\Zn Sound server for TDE" off "\Zb\Z6   \Zn" \
 "Deps/dbus-tqt" "\Zb\Zr\Z4R\Zn A simple IPC library" off "\Zb\Z6   \Zn" \
 "Deps/dbus-1-tqt" "\Zb\Zr\Z4R\Zn D-Bus bindings" off "\Zb\Z6   \Zn" \
@@ -459,13 +459,13 @@ s|=y|=\\\Zb\\\Z2y\\\Zn|;s|=p|=\\\Zb\\\Z2p\\\Zn|")" \
 }
 
 
-## only run this if tqt3 has been selected
+## only run this if tqt has been selected
 rm -f $TMPVARS/TQT_OPTS
 rm -f $TMPVARS/PKG_CONFIG_PATH_MOD
-[[ $(grep -o tqt3 $TMPVARS/TDEbuilds) ]] && {
+[[ $(grep -o Deps/tqt[^i] $TMPVARS/TDEbuilds) ]] && {
 dialog --cr-wrap --nocancel --no-shadow --colors --title " TQt options " --item-help --checklist \
 "
-A minimal packaging of tqt3 will install only the run-time library
+A minimal packaging of tqt will install only the run-time library
 required for TDE, and the headers and binaries required to build
 most\Zb\Z2*\Zn of TDE.
 
@@ -502,7 +502,7 @@ dialog --aspect 3 --cr-wrap --yes-label "Set" --no-label "Leave" --defaultno --n
 "
 $PKGCF_MESSAGE
 
-This will be done with doinst.sh -> pkgconfig.sh and it will therefore apply whenever this build of tqt3 is installed.
+This will be done with doinst.sh -> pkgconfig.sh and it will therefore apply whenever this build of tqt is installed.
 
 Either way, the TDE and TQT pkgconfig paths will be added if not already included.
 
@@ -753,8 +753,8 @@ Create and/or update the git repositories local copies.
 
 
 #rm -f $TMPVARS/PRE_DOWNLOAD  ## this is done at the head of this script
-[[ $(cat $TMPVARS/TDEVERSION) == 14.1.4 ]] && PRE_DOWNLOAD_MESSAGE="Only the source archives not already in 'src' will be downloaded." || PRE_DOWNLOAD_MESSAGE="All cgit sources for the build list packages will be cloned/updated.\nMisc archives will only be downloaded if not already in 'src'."
-## testing for cgit!=no will allow =yes, or null, which is the 14.1.4 build case
+[[ $(cat $TMPVARS/TDEVERSION) == 14.1.5 ]] && PRE_DOWNLOAD_MESSAGE="Only the source archives not already in 'src' will be downloaded." || PRE_DOWNLOAD_MESSAGE="All cgit sources for the build list packages will be cloned/updated.\nMisc archives will only be downloaded if not already in 'src'."
+## testing for cgit!=no will allow =yes, or null, which is the 14.1.5 build case
 [[ $(cat $TMPVARS/DL_CGIT) != no ]] &&  {
 dialog --cr-wrap --no-shadow --colors --defaultno --title " Only download sources " --yesno \
 "
@@ -898,8 +898,8 @@ koffice:
  revert chalk to krita                  \Zb\Z6$RVT\Zn
  build with GraphicsMagick              \Zb\Z6$USE_GM\Zn"
 #
-## tqt3 options, if tqt3 is being built
-[[ $(grep -o tqt3 $TMPVARS/TDEbuilds) ]] && {
+## tqt options, if tqt is being built
+[[ $(grep -o Deps/tqt[^i] $TMPVARS/TDEbuilds) ]] && {
 TQT_BLD=yes && [[ $TQT_OPTS != *minimal* ]] && TQT_BLD=no
 TQT_DOCS=no && [[ $TQT_OPTS != *nodocs* ]] && TQT_DOCS=yes
 }

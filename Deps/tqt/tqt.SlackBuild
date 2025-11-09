@@ -26,7 +26,7 @@
 # Much help from the 12.2 SlackBuild script of qt3. And from SBo qt3 script
 # Man pages are not installed by 'make install' and have not been manually installed
 
-PRGNAM=tqt3
+PRGNAM=tqt
 VERSION=$TDEVERSION
 BUILD=${BUILD:-1}
 TAG=${TAG:-_tde}
@@ -183,7 +183,7 @@ rm bin/tqm2ts
 installdocs_fn
 
 ## Ref issue #37
-## Set up tqt3.sh to add TDE PATHs only if xinitrc -> xinitrc.tde
+## Set up tqt.sh to add TDE PATHs only if xinitrc -> xinitrc.tde
 mkdir -p $PKG/etc/profile.d
 #
 echo '#!'"/bin/sh
@@ -193,18 +193,18 @@ echo '#!'"/bin/sh
 
 # Environment path variable for the tQt package.
 export TQTDIR=$TQTDIR
-" > $PKG/etc/profile.d/tqt3.sh
+" > $PKG/etc/profile.d/tqt.sh
 
 echo "echo '# Add TDE library directory:
 $INSTALL_TDE/lib$LIBDIRSUFFIX
-' > /etc/ld.so.conf.d/tqt3.conf
-" >> $PKG/etc/profile.d/tqt3.sh
+' > /etc/ld.so.conf.d/tqt.conf
+" >> $PKG/etc/profile.d/tqt.sh
 
 [[ $TQTDIR != $INSTALL_TDE ]] && {
 echo "echo '# Add TQT library directory:
 $TQTDIR/lib$LIBDIRSUFFIX
-' >> /etc/ld.so.conf.d/tqt3.conf
-" >> $PKG/etc/profile.d/tqt3.sh
+' >> /etc/ld.so.conf.d/tqt.conf
+" >> $PKG/etc/profile.d/tqt.sh
 }
 
 [[ $(cat $TMPVARS/PKG_CONFIG_PATH_MOD) != set ]] && PC_HASH="#"
@@ -214,11 +214,11 @@ echo "
 ## add path for INSTALL_TDE ..
 [[ \$PKG_CONFIG_PATH != *$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig* ]] && \\
 PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconfig
-## .. and for TQTDIR if different" >> $PKG/etc/profile.d/tqt3.sh
+## .. and for TQTDIR if different" >> $PKG/etc/profile.d/tqt.sh
 
 [[ $TQTDIR != $INSTALL_TDE ]] && \
 echo "[[ \$PKG_CONFIG_PATH != *$TQTDIR/lib$LIBDIRSUFFIX/pkgconfig* ]] && \\
-PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$TQTDIR/lib$LIBDIRSUFFIX/pkgconfig" >> $PKG/etc/profile.d/tqt3.sh
+PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$TQTDIR/lib$LIBDIRSUFFIX/pkgconfig" >> $PKG/etc/profile.d/tqt.sh
 
 echo "#
 ## remove duplicated paths:
@@ -226,22 +226,22 @@ ${PC_HASH:-}PKG_CONFIG_PATH=\$(echo \$PKG_CONFIG_PATH| tr : \\\\n | awk '!seen[\
 #
 export PKG_CONFIG_PATH
 } || {
-[[ -e /etc/ld.so.conf.d/tqt3.conf ]] && {
+[[ -e /etc/ld.so.conf.d/tqt.conf ]] && {
 echo '# TDE library directory to be added:
-' > /etc/ld.so.conf.d/tqt3.conf
+' > /etc/ld.so.conf.d/tqt.conf
 }
-}" >> $PKG/etc/profile.d/tqt3.sh
+}" >> $PKG/etc/profile.d/tqt.sh
 
 ## set up a placeholder file to enable removal with removepkg -
-## contents will be added from tqt3.sh
+## contents will be added from tqt.sh
 mkdir -p $PKG/etc/ld.so.conf.d
 echo '# Placeholder - TDE library directory to be added:
-' > $PKG/etc/ld.so.conf.d/tqt3.conf
+' > $PKG/etc/ld.so.conf.d/tqt.conf
 
 echo '#!'"/bin/csh
 # Environment path variable for the tQt package:
 setenv TQTDIR $TQTDIR
-" > $PKG/etc/profile.d/tqt3.csh
+" > $PKG/etc/profile.d/tqt.csh
 
 strip_fn
 
@@ -277,7 +277,7 @@ echo "
 # make exactly 11 lines for the formatting to be correct.  It's also
 # customary to leave one space after the ':'.
        |-----handy-ruler------------------------------------------------------|
-$PRGNAM: tqt3 (C++ GUI application framework)
+$PRGNAM: tqt (C++ GUI application framework)
 $PRGNAM:
 $PRGNAM: tQt is a multiplatform C++ GUI application framework
 $PRGNAM:
@@ -350,7 +350,7 @@ patch -p0 << EOF
 +    executePushButton->setText(tr("&Run"));
 EOF
 
-## This could be a first build of tqt3, so build with the packaging directory binaries
+## This could be a first build of tqt, so build with the packaging directory binaries
 $PKG$INSTALL_TDE/bin/tqmake -project -o regextester.pro
 $PKG$INSTALL_TDE/bin/tqmake TARGET=regextester -spec $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/linux-g++
 

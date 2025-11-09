@@ -33,47 +33,14 @@ getsource_fn
 
 untar_fn
 
-## patches for building with clang
-patch -p0 -N << EOF || true
---- krusader/Konfigurator/kgstartup.cpp
-+++ krusader/Konfigurator/kgstartup.cpp
-@@ -58,3 +58,4 @@
--  KONFIGURATOR_NAME_VALUE_PAIR comboItems[ profileList.count() ];
--  for(unsigned int i=0; i != profileList.count(); i++ )
--    comboItems[ i ].text = comboItems[ i ].value = profileList [ i ];    
-+  const int profileListCount = profileList.count();
-+  KONFIGURATOR_NAME_VALUE_PAIR *comboItems = new KONFIGURATOR_NAME_VALUE_PAIR[ profileListCount ];
-+  for( unsigned int i=0; i != profileListCount; i++ )
-+  comboItems[ i ].text = comboItems[ i ].value = profileList[ i ];
-@@ -63,2 +64,2 @@
--  profileCombo = createComboBox( "Startup", "Starter Profile Name", comboItems[ 0 ].value, comboItems, profileList.count(), panelsGrp, false, false );
--  profileCombo->setSizePolicy(  TQSizePolicy::Expanding, TQSizePolicy::Fixed);
-+  profileCombo = createComboBox( "Startup", "Starter Profile Name", comboItems[ 0 ].value, comboItems, profileListCount, panelsGrp, false, false );
-+  profileCombo->setSizePolicy( TQSizePolicy::Expanding, TQSizePolicy::Fixed );
-@@ -65,0 +67,2 @@
-+
-+  delete [] comboItems;
---- krusader/Panel/krview.h
-+++ krusader/Panel/krview.h
-@@ -211 +211 @@
--
-+  static TQPixmap getIcon(vfile *vf);
-@@ -229 +228,0 @@
--  static TQPixmap getIcon(vfile *vf);
-' | while read line
-EOF
-
 # set support for additional language(s) as per I18N variable
 # but only for languages available with this package
-langs="";for Lang in $I18N;do [[ -e po/$Lang".po" ]] && langs="$langs $Lang"".po";done
-sed -i "s|POFILES =.*$|POFILES =$langs|" po/Makefile.am
+langs="";for Lang in $I18N;do [[ -e translations/messages/krusader/$Lang.po ]] && langs="$langs $Lang.po";done
+sed -i "s|POFILES =.*$|POFILES =$langs|" translations/messages/krusader/Makefile.am
 langs=$(echo $langs | sed 's|.po||g')
 #
-ldocs="en tdeioslave/{krarc,virt}"
+ldocs="en en/tdeioslave/{krarc,virt}"
 [[ $I18N != *ru* ]] && sed -i 's| ru||' doc/Makefile.am || ldocs="$ldocs ru"
-
-## fix check for visibility support - tde-common-admin pull #20
-sed -i 's| Q_EXPORT| TQ_EXPORT|' admin/acinclude.m4.in
 
 listdocs_fn
 

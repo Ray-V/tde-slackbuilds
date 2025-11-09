@@ -116,6 +116,82 @@ sed -i 's|KDE_EXPORT|TDE_EXPORT|' kmrml/kmrml/server/*.cpp
 sed -i  's|AUTHOR_WARNING|WARNING|' kmrml/CMakeLists.txt
 }
 
+## patch for poppler-25.10+ - https://mirror.git.trinitydesktop.org/gitea/TDE/tdegraphics/pulls/136
+pkg-config --atleast-version=25.10 poppler && {
+patch -p0 << EOF
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-document.cpp
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-document.cpp
+@@ -91,1 +91,4 @@
+-#   if (POPPLER_VERSION_C >= 22003000)
++#   if (POPPLER_VERSION_C >= 25010000)
++    DocumentData *doc2 = new DocumentData(data->doc.getFileName()->copy(),
++                                          GooString(password.data()));
++#   elif (POPPLER_VERSION_C >= 22003000)
+@@ -228,1 +231,8 @@
+-    while ( i < obj.getString()->getLength() )
++    while
++    (
++#       if (POPPLER_VERSION_C >= 25010000)
++        i < obj.getString()->size()
++#       else
++        i < obj.getString()->getLength()
++#       endif
++    )
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-private.cpp
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.cpp
+@@ -60,1 +60,8 @@
+-    while ( i < s1->getLength() )
++    while
++    (
++#       if (POPPLER_VERSION_C >= 25010000)
++        i < s1->size()
++#       else
++        i < s1->getLength()
++#       endif
++    )
+@@ -132,17 +139,25 @@
+-                TQChar *charArray = new TQChar[s->getLength()];
+-                for (int i = 0; i < s->getLength(); ++i) charArray[i] = TQChar(s->GOO_GET_CSTR()[i]);
+-                    TQString aux(charArray, s->getLength());
+-                    item.setAttribute( "DestinationName", aux );
+-                    delete[] charArray;
+-                }
+-                else if ( destination && destination->isOk() )
+-                {
+-                    LinkDestinationData ldd(destination, NULL, this);
+-                    item.setAttribute( "Destination", LinkDestination(ldd).toString() );
+-                }
+-                if ( a->getKind() == actionGoToR )
++#               if (POPPLER_VERSION_C >= 25010000)
++                int sLen = s->size();
++#               else
++                int sLen = s->getLength();
++#               endif
++                TQChar *charArray = new TQChar[sLen];
++                for (int i = 0; i < sLen; ++i)
+                 {
+-                    CONST_064 LinkGoToR * g2 = static_cast< CONST_064 LinkGoToR * >( a );
+-                    item.setAttribute( "ExternalFileName", g2->getFileName()->GOO_GET_CSTR() );
++                    charArray[i] = TQChar(s->GOO_GET_CSTR()[i]);
+                 }
++                TQString aux(charArray, sLen);
++                item.setAttribute( "DestinationName", aux );
++                delete[] charArray;
++            }
++            else if ( destination && destination->isOk() )
++            {
++                LinkDestinationData ldd(destination, NULL, this);
++                item.setAttribute( "Destination", LinkDestination(ldd).toString() );
++            }
++            if ( a->getKind() == actionGoToR )
++            {
++                CONST_064 LinkGoToR * g2 = static_cast< CONST_064 LinkGoToR * >( a );
++                item.setAttribute( "ExternalFileName", g2->getFileName()->GOO_GET_CSTR() );
+             }
++        }
+EOF
+}
+
 listdocs_fn
 
 chown_fn

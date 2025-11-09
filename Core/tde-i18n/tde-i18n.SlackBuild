@@ -38,7 +38,7 @@ getsource_fn
 ## extract, build, and remove source for each language package one at a time
 
 cd $TMP_BUILD/tmp-$PRGNAM
-[[ $TDEVERSION == 14.1.4 ]] && {
+[[ $TDEVERSION == 14.1.5 ]] && {
 # extract the template source once only
 echo -e "\033[39;1m
   Extracting the template source from $(basename $SOURCE) ...
@@ -71,7 +71,7 @@ cp -a --parents cmake/* $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/)
 
 for lang in $I18N
 do
-[[ $TDEVERSION == 14.1.4 ]] && {
+[[ $TDEVERSION == 14.1.5 ]] && {
 # extract the source for one language at a time for each iteration of the loop
 echo -e "\033[39;1m
   Extracting the $PRGNAM-$lang source from $(basename $SOURCE) ...

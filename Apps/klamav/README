@@ -1,4 +1,6 @@
 klamav needs clamav as a build time requirement.
 
 If it's not installed or the source isn't available, running the SlackBuild will show the download URL and exit.
+
+The stated minimum version of rust for clamav-1.5.0 is 1.81 - but this doesn't work, a later version is required. The build was successful with rust-1.85.
  

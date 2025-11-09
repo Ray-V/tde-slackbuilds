@@ -1,0 +1,4 @@
+For R14.1.5, building libkdcraw may fail when using gcc-15 - in which case, try using an earlier version of gcc, or clang.
+
+See https://mirror.git.trinitydesktop.org/gitea/TDE/libkdcraw/pulls/25 for details
+ 

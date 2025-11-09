@@ -33,7 +33,7 @@ source ../../get-source.sh
 ## klamav needs clamav as a build time requirement
 [[ $(cat $TMPVARS/PRE_DOWNLOAD) != yes ]] && {
 # ### clamav  - start
-clamav_VERS=1.4.2
+clamav_VERS=1.5.0
 clamav_installed_fn () { pkg-config --atleast-version=$clamav_VERS libclamav ;}
 ## If it's already installed, go to end
 clamav_installed_fn || {
@@ -89,6 +89,7 @@ cmake ${G_NINJA:-} \
     -DENABLE_SYSTEMD="OFF" \
     -DENABLE_JSON_SHARED="ON" \
     -DCMAKE_INSTALL_MANDIR=/usr/local/man \
+    -DCVD_CERTS_DIRECTORY=etc/certs \
     -Wno-dev \
     ..
 

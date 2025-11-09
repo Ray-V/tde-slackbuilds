@@ -135,6 +135,13 @@ tde_add_executable( dcraw_half AUTOMOC
 sed -i 's|project( libkdcraw|& VERSION 0.1.9|' CMakeLists.txt
 sed -i 's|Version:.*$|Version: @PROJECT_VERSION@|' libkdcraw/libkdcraw.pc.cmake
 
+## patch for build error with gcc-15 - https://mirror.git.trinitydesktop.org/gitea/TDE/libkdcraw/pulls/25
+<<'tba'
+patch -p0 -N << EOF
+
+EOF
+tba
+
 chown_fn
 
 cd_builddir_fn

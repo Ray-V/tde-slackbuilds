@@ -33,18 +33,6 @@ getsource_fn
 
 untar_fn
 
-## fix showfoto crash - re: digikam issue #50/pull #51
-[[ $TDEVERSION == 14.1.4 ]] && {
-patch -p0 << EOF
---- src/showfoto/CMakeLists.txt
-+++ src/showfoto/CMakeLists.txt
-@@ -28,2 +28,1 @@
--    imagepropertiesshowfoto-static jpegutils-static showfoto-static showfotosetupinternal-static
--    slideshow-static themeengine-static threadimageio-static thumbbar-static
-+    showfotosetupinternal-static digikam-shared
-EOF
-}
-
 ## for slack-desc
 langs="";for Lang in $I18N;do [[ -s translations/messages/$Lang.po ]] && langs="$langs $Lang";done
 ldocs="";for Lang in $I18N;do [[ -d doc/$Lang ]] && ldocs="$ldocs $Lang";done
