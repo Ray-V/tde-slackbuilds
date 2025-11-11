@@ -136,11 +136,35 @@ sed -i 's|project( libkdcraw|& VERSION 0.1.9|' CMakeLists.txt
 sed -i 's|Version:.*$|Version: @PROJECT_VERSION@|' libkdcraw/libkdcraw.pc.cmake
 
 ## patch for build error with gcc-15 - https://mirror.git.trinitydesktop.org/gitea/TDE/libkdcraw/pulls/25
-<<'tba'
+[[ $TDEVERSION == 14.1.5 ]] && {
 patch -p0 -N << EOF
-
+--- libkdcraw/libraw/samples/half_mt.c
++++ libkdcraw/libraw/samples/half_mt.c
+@@ -38,1 +38,1 @@
+-                    return -1;                                   \\
++                    return (void*)-1;                           \\
+@@ -65,1 +65,1 @@
+-int process_files(void *q)
++void* process_files(void *q)
+@@ -75,1 +75,1 @@
+-            return -1;
++            return (void*)-1;
+@@ -104,1 +104,1 @@
+-    return count;
++    return (void*)count;
+@@ -168,6 +168,6 @@
+-            int *iptr;
++            void *vptr;
+             if(threads[i])
+                 {
+-                    pthread_join(threads[i],&iptr);
+-                    if(iptr)
+-                        printf("Thread %d : %d files\n",i,(int)iptr);
++                    pthread_join(threads[i],&vptr);
++                    if(vptr)
++                        printf("Thread %d : %d files\n",i,(int)vptr);
 EOF
-tba
+}
 
 chown_fn
 
