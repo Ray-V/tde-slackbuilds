@@ -132,6 +132,23 @@ sed -i 's|^if( TDESU_BACKEND-NOTFOUND )|if( ${TDESU_BACKEND} STREQUAL "TDESU_BAC
 sed -i 's|endif( TDESU_BACKEND-NOTFOUND )|endif()|' tdesu/CMakeLists.txt
 sed -i 's|"sudo su"|sudo|' konsole/other/CMakeLists.txt
 
+## patch from pulls/678 as a fix for issues/675
+[[ $TDEVERSION == 14.1.5 ]] && {
+patch -p0 << EOF
+--- twin/geometry.cpp
++++ twin/geometry.cpp
+@@ -1918,6 +1918,6 @@
+-    if( !activeTiled && !adjust && !( y() == clientArea.top() && height() == clientArea.height()))
++    if( !adjust && !( y() == clientArea.top() && height() == clientArea.height()))
+         {
+         geom_restore.setTop( y());
+         geom_restore.setHeight( height());
+         }
+-    if( !activeTiled && !adjust && !( x() == clientArea.left() && width() == clientArea.width()))
++    if( !adjust && !( x() == clientArea.left() && width() == clientArea.width()))
+EOF
+}
+
 listdocs_fn
 
 chown_fn

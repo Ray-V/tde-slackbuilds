@@ -6,8 +6,7 @@
 .. for Slackware [x86_64/i586+/arm], and [Slarm64](https://slackware.uk/slarm64/) [aarch64].  
 See [*Cross compiling for RPi3*](#xcompiling) for building for arm_hf and aarch64.
 
-For a native build, run **./BUILD-TDE.sh** - a dialog based script with a series of screens for user input,  
-which will build the release version 14.1.5, or the development versions 14.1.x/14.2.0.
+For a native build, run **./BUILD-TDE.sh** - a dialog based script with a series of screens for user input which will build the release version 14.1.5 or the development versions 14.1.x/14.2.0.
 
 [<img src="https://ray-v.github.io/TDE-version.png">](https://ray-v.github.io/TDE-version.png "TDE version")  
 ... select TDE version

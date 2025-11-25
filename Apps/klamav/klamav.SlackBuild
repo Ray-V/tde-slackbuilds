@@ -33,7 +33,7 @@ source ../../get-source.sh
 ## klamav needs clamav as a build time requirement
 [[ $(cat $TMPVARS/PRE_DOWNLOAD) != yes ]] && {
 # ### clamav  - start
-clamav_VERS=1.5.0
+clamav_VERS=1.5.1
 clamav_installed_fn () { pkg-config --atleast-version=$clamav_VERS libclamav ;}
 ## If it's already installed, go to end
 clamav_installed_fn || {
@@ -54,13 +54,12 @@ tar xf $BUILD_TDE_ROOT/src/clamav-$clamav_VERS.tar.gz
 
 cd clamav-$clamav_VERS/
 
-RUSTC_MIN_REQd=$(grep rust-version .cargo/vendor/home/Cargo.toml | grep -o \"1\..*) # eg "1.70.0"
-RUSTC_MIN_REQd2=$(echo $RUSTC_MIN_REQd | grep -o "1\..."|sed 's|\.||')              # eg 170
-#
-[[ ! $(rustc --version | grep -o "1\..."|sed 's|\.||') -ge $RUSTC_MIN_REQd2 ]] && { echo -e "\033[39;1m
+# test for the latest minimum rust version required -
+RUSTC_MIN_REQd=$(grep -r ^rust-version .cargo/vendor | cut -d: -f2 | sort -ru | head -n1 | cut -d\" -f2) # eg 1.85.0
+RUSTC_MIN_REQd2=$(echo $RUSTC_MIN_REQd | tr -d .)                                                        # eg 1850
+[[ ! $(rustc --version | cut -d ' ' -f2 | tr -d .) -ge $RUSTC_MIN_REQd2 ]] && { echo -e "\033[39;1m
  ## rust version $RUSTC_MIN_REQd or greater is required to build clamav-$clamav_VERS ##
  \033[0m" ; exit 1 ; }
-
 ## set RPATH relative to ORIGIN always
 sed -i 's|set(CMAKE_INSTALL_RPATH.*$|set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")|' CMakeLists.txt
 

@@ -33,22 +33,34 @@ getsource_fn
 
 untar_fn
 
+[[ $TDEVERSION == 14.1.5 ]] && {
+
 # set support for additional language(s) as per I18N variable
 # but only for languages available with this package
 langs="";for Lang in $I18N;do [[ -e translations/messages/krusader/$Lang.po ]] && langs="$langs $Lang.po";done
 sed -i "s|POFILES =.*$|POFILES =$langs|" translations/messages/krusader/Makefile.am
-langs=$(echo $langs | sed 's|.po||g')
+[[ $langs != "" ]] && langs=" $(echo $langs | sed 's|.po||g')"
 #
 ldocs="en en/tdeioslave/{krarc,virt}"
 [[ $I18N != *ru* ]] && sed -i 's| ru||' doc/Makefile.am || ldocs="$ldocs ru"
 
+} || {
+
+## otherwise for slack-desc only
+langs="";for Lang in $I18N;do [[ -s translations/messages/krusader/$Lang.po ]] && langs="$langs $Lang";done
+ldocs="en en/tdeioslave/{krarc,virt}";for Lang in $I18N;do [[ -d doc/$Lang ]] && ldocs="$ldocs $Lang";done
+
+}
+
 listdocs_fn
 
-ltoolupdate_fn
+[[ $TDEVERSION == 14.1.5 ]] && ltoolupdate_fn
 
 chown_fn
 
 cd_builddir_fn
+
+[[ $TDEVERSION == 14.1.5 ]] && {
 
 [[ $GCC_VIS == ON ]] && EN_GCC_VIS="--enable-gcc-hidden-visibility"
 
@@ -61,6 +73,17 @@ CXX=$COMPILER_CXX \
    --mandir=$INSTALL_TDE/man \
    ${EN_GCC_VIS:-} \
    --disable-rpath
+
+} || {
+
+cmake ${G_NINJA:-} -C $TMPVARS/CMAKE_CACHE ${CMAKE_OPTS:-} \
+    -DWITH_JAVASCRIPT="OFF" \
+    -DWITH_KONQUEROR="ON" \
+    -DWITH_ACL="ON" \
+    -DBUILD_ISO="OFF" \
+    -DBUILD_TAR="OFF"
+
+}
 
 make_fn
 
@@ -88,7 +111,7 @@ $PRGNAM: Total Commander.
 $PRGNAM: It provides all the file management features you could possibly want.
 $PRGNAM:
 $PRGNAM: With language support for:
-$PRGNAM: en $langs
+$PRGNAM: en$langs
 $PRGNAM:
 $PRGNAM: With help documentation for:
 $PRGNAM: $ldocs

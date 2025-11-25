@@ -140,6 +140,107 @@ EOF
 sed -i 's|^if( TDESU_BACKEND-NOTFOUND )|if( ${TDESU_BACKEND} STREQUAL "TDESU_BACKEND-NOTFOUND" )|' CMakeLists.txt
 sed -i 's|endif( TDESU_BACKEND-NOTFOUND )|endif()|' CMakeLists.txt
 
+## patch from pulls/380 as a fix for issues/379
+[[ $TDEVERSION == 14.1.5 ]] && {
+patch -p0 << EOF
+--- tdecore/tdeconfigbackend.cpp
++++ tdecore/tdeconfigbackend.cpp
+@@ -434,74 +434,17 @@
+-#ifdef HAVE_MMAP
+-#ifdef SIGBUS
+-static sigjmp_buf mmap_jmpbuf;
+-struct sigaction mmap_old_sigact;
+-
+-extern "C" {
+-   static void mmap_sigbus_handler(int)
+-   {
+-      siglongjmp (mmap_jmpbuf, 1);
+-   }
+-}
+-#endif
+-#endif
+-
+ extern bool kde_kiosk_exception;
+ 
+ void TDEConfigINIBackEnd::parseSingleConfigFile(TQFile &rFile,
+ 					      KEntryMap *pWriteBackMap,
+ 					      bool bGlobal, bool bDefault)
+ {
+-   const char *s; // May get clobbered by sigsetjump, but we don't use them afterwards.
+-   const char *eof; // May get clobbered by sigsetjump, but we don't use them afterwards.
+-   TQByteArray data;
+-
+    if (!rFile.isOpen()) // come back, if you have real work for us ;->
+       return;
+ 
+-   //using kdDebug() here leads to an infinite loop
+-   //remove this for the release, aleXXX
+-   //tqWarning("Parsing %s, global = %s default = %s",
+-   //           rFile.name().latin1(), bGlobal ? "true" : "false", bDefault ? "true" : "false");
+-
+    TQCString aCurrentGroup("<default>");
+ 
+    unsigned int ll = localeString.length();
+ 
+-#ifdef HAVE_MMAP
+-   static volatile const char *map;
+-   map = ( const char* ) mmap(0, rFile.size(), PROT_READ, MAP_PRIVATE,
+-                                          rFile.handle(), 0);
+-
+-   if ( map != MAP_FAILED )
+-   {
+-      s = (const char*) map;
+-      eof = s + rFile.size();
+-
+-#ifdef SIGBUS
+-      struct sigaction act;
+-      act.sa_handler = mmap_sigbus_handler;
+-      sigemptyset( &act.sa_mask );
+-#ifdef SA_ONESHOT
+-      act.sa_flags = SA_ONESHOT;
+-#else
+-      act.sa_flags = SA_RESETHAND;
+-#endif      
+-      sigaction( SIGBUS, &act, &mmap_old_sigact );
+-
+-      if (sigsetjmp (mmap_jmpbuf, 1))
+-      {
+-tqWarning("SIGBUS while reading %s", rFile.name().latin1());
+-         munmap(( char* )map, rFile.size());
+-         sigaction (SIGBUS, &mmap_old_sigact, 0);
+-         return;
+-      }
+-#endif
+-   }
+-   else
+-#endif
+-   {
+-      rFile.at(0);
+-      data = rFile.readAll();
+-      s = data.data();
+-      eof = s + data.size();
+-   }
++   rFile.at(0);
++   TQByteArray data = rFile.readAll();
++   const char *s = data.data();
++   const char *eof = s + data.size();
+@@ -760,13 +703,2 @@
+-
+    if (fileOptionImmutable)
+       bFileImmutable = true;
+-
+-#ifdef HAVE_MMAP
+-   if (map)
+-   {
+-      munmap(( char* )map, rFile.size());
+-#ifdef SIGBUS
+-      sigaction (SIGBUS, &mmap_old_sigact, 0);
+-#endif
+-   }
+-#endif
+EOF
+}
+
 listdocs_fn
 
 chown_fn
