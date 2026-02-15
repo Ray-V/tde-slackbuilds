@@ -26,7 +26,7 @@
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 PRGNAM=graphviz
-VERSION=14.0.2
+VERSION=14.1.2
 BUILD=${BUILD:-1}
 TAG=${TAG:-}
 
@@ -43,7 +43,7 @@ echo -e "\033[39;1m"
 patch -p0 << EOF
 --- plugin/gs/gvloadimage_gs.c
 +++ plugin/gs/gvloadimage_gs.c
-@@ -77,11 +77,11 @@
+@@ -76,11 +76,11 @@
  
      assert (err < 0);
  
@@ -63,11 +63,11 @@ EOF
 patch -p0 << EOF
 --- tclpkg/gv/gv_php_init.c
 +++ tclpkg/gv/gv_php_init.c
-@@ -27,2 +27,3 @@
+@@ -49,2 +49,3 @@
 +    TSRMLS_FETCH();
      return PHPWRITE(s, len);
  }
-@@ -33,2 +34,3 @@
+@@ -55,2 +56,3 @@
 +    TSRMLS_FETCH();
      return PHPWRITE(s, len);
  }

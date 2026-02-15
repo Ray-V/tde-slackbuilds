@@ -1,11 +1,11 @@
+(double-conversion)
 Inkscape v1 requires the non-Slackware package double-conversion.
 
-If the installation or source isn't found, the download URL will be displayed when running the SlackBuild.
-
-The source will need to be pre-downloaded to the 'src' directory and will then be built, packaged, and installed during the inkscape build.
+If the installation or source isn't found, it can be downloaded from the URL displayed when running the inkscape SlackBuild.
+Double-conversion can then be built, packaged, and installed during the inkscape build.
 
 -----------------
-
+(inkscape)
 Build errors might occur for v1.4 relating to glibmm and pangomm.
 gcc and clang requirements are different, but in either case, minimum versions of glibmm-2.66.5 and pangomm-2.46.3 will enable a successful build.
  

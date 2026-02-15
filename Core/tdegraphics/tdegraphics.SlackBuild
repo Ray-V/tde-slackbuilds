@@ -116,6 +116,7 @@ sed -i 's|KDE_EXPORT|TDE_EXPORT|' kmrml/kmrml/server/*.cpp
 sed -i  's|AUTHOR_WARNING|WARNING|' kmrml/CMakeLists.txt
 }
 
+[[ $TDEVERSION == 14.1.5 ]] && {
 ## patch for poppler-25.10+ - https://mirror.git.trinitydesktop.org/gitea/TDE/tdegraphics/pulls/136
 pkg-config --atleast-version=25.10 poppler && {
 patch -p0 << EOF
@@ -190,6 +191,51 @@ patch -p0 << EOF
              }
 +        }
 EOF
+}
+
+## patch for poppler-25.12+ - https://mirror.git.trinitydesktop.org/gitea/TDE/tdegraphics/pulls/152
+pkg-config --atleast-version=25.12 poppler && {
+patch -p0 << EOF
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
+@@ -197,5 +197,10 @@
++# if (POPPLER_VERSION_C >= 25012000)
++  for (TextWord *word: word_list->getWords()) {
++    TQString string = TQString::fromUtf8(word->getText()->c_str());
++# else
+   for (int i = 0; i < word_list->getLength(); i++) {
+     TextWord *word = word_list->get(i);
+     GooString *word_str = word->getText();
+     TQString string = TQString::fromUtf8(word_str->GOO_GET_CSTR());
+     delete word_str;
++# endif
+EOF
+}
+
+## patch for poppler-26.01+ - https://mirror.git.trinitydesktop.org/gitea/TDE/tdegraphics/pulls/152
+pkg-config --atleast-version=26.01 poppler && {
+patch -p0 << EOF
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
+@@ -147,1 +147,5 @@
++#if (POPPLER_VERSION_C >= 26001000)
++    s = output_dev->getText(PDFRectangle(rect->x1, rect->y1, rect->x2, rect->y2));
++#else
+     s = output_dev->getText(rect->x1, rect->y1, rect->x2, rect->y2);
++#endif
+@@ -155,1 +159,5 @@
++#if (POPPLER_VERSION_C >= 26001000)
++    s = output_dev->getText(PDFRectangle(r.m_x1, y1, r.m_x2, y2));
++#else
+     s = output_dev->getText(r.m_x1, y1, r.m_x2, y2);
++#endif
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-private.cpp
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.cpp
+@@ -28,0 +28,2 @@
++#include <goo/gmem.h>
++
+EOF
+}
 }
 
 listdocs_fn
