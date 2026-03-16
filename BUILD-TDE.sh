@@ -179,7 +179,7 @@ dialog --cr-wrap --defaultno --no-shadow --colors --ok-label " 2 / 3 " --cancel-
  <\Zb\Z02\Zn> - the gcc native option \Zb\Z6$(echo $NATIVE_MARCH)\Zn for this machine
 
  <\Zb\Z03\Zn> - edit to specify \Zb\Z6march/mtune\Zn for a target machine
-\Zb\Z0  [[ use any arrow key x2 to activate the input box for editing ]]\Zn
+\Zb\Z0  [[ use any arrow key twice to activate the input box for editing ]]\Zn
  
 " \
 18 75 "$(echo $NATIVE_MARCH)" \
@@ -275,9 +275,9 @@ dialog --cr-wrap --defaultno --yes-label "Stop" --no-label "Continue" --no-shado
 "
 Do you want the build to <\Z1S\Zb\Z0top\Zn> at a failure or \Zr\Z4\ZbContinue\Zn to the next SlackBuild?
 
-Build logs are \Zu$TMP/<program>-*-build-log\ZU,
+Build logs are \Zb\Z6$TMP/<program>-*-build-log\Zn,
 and configure[cmake] logs will be in
-\Zu$TMP/build/tmp-<program>/<program>/build-<program>[/CMakeFiles]\ZU.
+\Zb\Z6$TMP/build/tmp-<program>/<program>/build-<program>[/CMakeFiles]\Zn.
 
 A practical build method could be:
 
@@ -601,7 +601,7 @@ sed -i 's|Apps/koffice|Misc/GraphicsMagick &|' $TMPVARS/TDEbuilds
 
 rm -f $TMPVARS/Koffice_OPTS
 [[ $(cat $TMPVARS/Krita_OPTS) == *krita* ]] && CHALK=krita
-## fully populate the DO_NOT_COMPILE list and remove applications selected to be built
+## fully populate the DO_NOT_COMPILE list - then remove the applications selected to be built when Koffice_OPTS has been created
 echo "autocorrect ${CHALK:-chalk} doc example filters karbon kchart kdgantt kexi kformula kivio koshell kounavail kplato kpresenter kross kspread kugar kword mimetypes pics plugins servicetypes templates tools" > $TMPVARS/DO_NOT_COMPILE
 #
 [[ $CHALK != krita ]] && {
@@ -652,6 +652,7 @@ ${app_k:-} ${about_k:-} ${status_k:-} ${comment_k:-} \
 " tools" "CLI document converter, tdeio_thumbnail module, etc" off "\Zb\Z6  \Zn" \
 2> $TMPVARS/Koffice_OPTS
 
+## recreate DO_NOT_COMPILE list ..
 [[ $(grep -o ALL $TMPVARS/Koffice_OPTS) ]] && echo "" > $TMPVARS/DO_NOT_COMPILE || {
 ## change nbsp to space if chalk/krita in build list
 sed -i "s| | |" $TMPVARS/Koffice_OPTS

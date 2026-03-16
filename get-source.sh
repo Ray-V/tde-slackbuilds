@@ -130,6 +130,7 @@ git checkout -- *
 git pull
 ## repo is in master - update r14.1.x to latest revision
 git fetch origin r14.1.x:r14.1.x)
+#
 [[ -d cmake ]] && \
 (echo "Updating cmake ..."
 cd cmake
@@ -139,8 +140,17 @@ git pull
 git fetch origin r14.1.x:r14.1.x)
 
 ## if admin and cmake don't exist, clone them
-[[ ! -d admin ]] && git clone https://mirror.git.trinitydesktop.org/gitea/TDE/tde-common-admin admin
-[[ ! -d cmake ]] && git clone https://mirror.git.trinitydesktop.org/gitea/TDE/tde-cmake cmake
+[[ ! -d admin ]] && {
+git clone https://mirror.git.trinitydesktop.org/gitea/TDE/tde-common-admin admin
+(cd admin
+git fetch origin r14.1.x:r14.1.x)
+}
+#
+[[ ! -d cmake ]] && {
+git clone https://mirror.git.trinitydesktop.org/gitea/TDE/tde-cmake cmake
+(cd cmake
+git fetch origin r14.1.x:r14.1.x)
+}
 
 ## place a marker so that admin/cmake update or clone only once per run of BUILD-TDE.sh
 touch $TMPVARS/admin-cmake-done
@@ -158,9 +168,13 @@ rm -rf .git/worktrees/*
 git checkout -- *
 git pull
 git fetch origin r14.1.x:r14.1.x)
+#
 ## if the local repository for PRGNAM doesn't exist, clone it ..
-[[ ! -d $PRGNAM ]] && \
+[[ ! -d $PRGNAM ]] && {
 git clone https://mirror.git.trinitydesktop.org/gitea/TDE/$PRGNAM
+(cd $PRGNAM
+git fetch origin r14.1.x:r14.1.x)
+}
 
 ## if arts/tdelibs, need libltdl
 [[ " arts tdelibs " == *$PRGNAM* ]] && {
@@ -172,8 +186,11 @@ git checkout -- *
 git pull
 git fetch origin r14.1.x:r14.1.x)
 
-[[ ! -d libltdl ]] && \
+[[ ! -d libltdl ]] && {
 git clone https://mirror.git.trinitydesktop.org/gitea/TDE/libltdl
+(cd libltdl
+git fetch origin r14.1.x:r14.1.x)
+}
 }
 
 ## if tdenetwork, need libtdevnc
@@ -187,8 +204,11 @@ git pull
 git fetch origin r14.1.x:r14.1.x
 )
 
-[[ ! -d libtdevnc ]] && \
+[[ ! -d libtdevnc ]] && {
 git clone https://mirror.git.trinitydesktop.org/gitea/TDE/libtdevnc
+(cd libtdevnc
+git fetch origin r14.1.x:r14.1.x)
+}
 }
 
 true # prevent the following i18n download (attempts) if this routine fails
@@ -277,17 +297,22 @@ echo -e "\n copying $PRGNAM git sources to build area ... \n"
 rm -rf .git/worktrees/*
 ## Use FEAT as a command line option to checkout any other development branch ..
 ## .. plus FEATa for admin, FEATc for cmake if required
-git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/ ${FEAT:-$DEV_BRANCH}
+git worktree add -d $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/ ${FEAT:-$DEV_BRANCH}
 
 cd ../admin
 echo -e "\n copying admin git sources to build area ... \n"
 rm -rf .git/worktrees/*
-git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/admin/ ${FEATa:-$DEV_BRANCH}
+git worktree add -d $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/admin/ ${FEATa:-$DEV_BRANCH}
 
 cd ../cmake
 echo -e "\n copying cmake git sources to build area ... \n"
 rm -rf .git/worktrees/*
-git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/cmake/ ${FEATc:-$DEV_BRANCH}
+git worktree add -d $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/cmake/ ${FEATc:-$DEV_BRANCH}
+#
+## reverse commit 5d635ba561bb because tde-cmake is not installed for tde-slackbuilds [ TODO for 14.1.6]
+(cd $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/cmake
+git revert --no-edit 5d635ba561bb
+)
 
 echo -e "\033[39;1m"
 ## The FEAT commits are based on master branch, so rebase the FEAT master branch commit
@@ -309,14 +334,14 @@ echo -e "\033[0m"
 cd ../libltdl
 echo -e "\n copying libltdl git sources to build area ... \n"
 rm -rf .git/worktrees/*
-git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/libltdl/ $DEV_BRANCH
+git worktree add -d $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/libltdl/ $DEV_BRANCH
 }
 
 [[ " tdenetwork " == *$PRGNAM* ]] && {
 cd ../libtdevnc/
 echo -e "\n copying libtdevnc git sources to build area ... \n"
 rm -rf .git/worktrees/*
-git worktree add -f $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/libtdevnc/ $DEV_BRANCH
+git worktree add -d $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/libtdevnc/ $DEV_BRANCH
 }
 echo # if this fails, SlackBuild will fail from [3]
 )

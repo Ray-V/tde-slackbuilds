@@ -75,6 +75,11 @@ echo $'--- mkspecs/linux-g++/qmake.conf
 -QMAKE_RPATH		= -Wl,-rpath,
 +QMAKE_RPATH =
 ' | patch -p0
+
+## development builds work-around for configure check for compiler support for C++17 standard
+[[ $TDEVERSION != 14.1.5 ]] && {
+sed -i 's|COMPILER=`sed.*$|#&\n## modified for SlackBuild ..\nCOMPILER=$COMPILER_CXX|' configure
+}
 }
 
 ## don't install html docs if 'nodocs' has been selected
@@ -156,7 +161,7 @@ echo "yes" | \
  -plugin-style-sgi \
  -plugin-style-windows \
  -fast \
- -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib:$INST_RPATH\' ## +$INST_RPATH for run-time RPATH
+ -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib:$INST_RPATH\' ## $INST_RPATH added for run-time RPATH
 
 #| cc1plus: error: one or more PCH files were found, but they were invalid
 #| <command-line>: fatal error: tqtdesignercore: No such file or directory
