@@ -311,6 +311,15 @@ If following the build method on the previous screen, the answer here should pro
 [[ $? == 0 ]] && echo yes > $TMPVARS/KEEP_BUILD
 [[ $? == 1 ]] && echo no > $TMPVARS/KEEP_BUILD
 
+## tqtinterface has been removed for 14.2.0
+# Use non-breaking space - U00a0 - in strings for this to work with 'dialog'
+[[ $(cat $TMPVARS/TDEVERSION) != 14.2.0 ]] && {
+app_1="Deps/tqtinterface"
+about_1="\Zb\Zr\Z4R\Zn TDE bindings to tqt."
+status_1=off
+comment_1="\Zb\Z6 \Zn"
+}
+
 rm -f $TMPVARS/TDEbuilds
 dialog --cr-wrap --nocancel --no-shadow --colors --title " TDE Packages Selection " --item-help --checklist \
 "
@@ -323,7 +332,7 @@ Look out for messages in the bottom line of the screen, especially relating to d
 Non-TDE apps are in the Misc category and don't need the \Zb\Zr\Z4R\Znequired TDE packages." \
 17 85 0 \
 "Deps/tqt" "\Zb\Zr\Z4R\Zn The Qt package for TDE" off "\Zb\Z6  \Zn" \
-"Deps/tqtinterface" "\Zb\Zr\Z4R\Zn TDE bindings to tqt." off "\Zb\Z6  \Zn" \
+${app_1:-} ${about_1:-} ${status_1:-} ${comment_1:-} \
 "Deps/arts" "\Zb\Zr\Z4R\Zn Sound server for TDE" off "\Zb\Z6   \Zn" \
 "Deps/dbus-tqt" "\Zb\Zr\Z4R\Zn A simple IPC library" off "\Zb\Z6   \Zn" \
 "Deps/dbus-1-tqt" "\Zb\Zr\Z4R\Zn D-Bus bindings" off "\Zb\Z6   \Zn" \
@@ -474,7 +483,7 @@ If you select minimal packaging and intend to build any of those at any time, se
 
 TQt html documentation is ~21M, and can be excluded from the package.
 
-The only mkspecs required is the one for linux-g++
+mkspecs/linux-SB will be created and used for this build.
  
 " \
 26 75 6 \
@@ -483,7 +492,7 @@ The only mkspecs required is the one for linux-g++
 " tdevel" " ├─ Keep libs for tdevelop" off "\Zb\Z6 Only required if minimal packaging selected \Zn" \
 " ktorrent" " └─ Keep designer libs for ktorrent" off "\Zb\Z6 Only required if minimal packaging selected \Zn" \
 " nodocs" "Exclude html documentation" on "\Zb\Z6  \Zn" \
-" mkspecs" "linux-g++ only" on "\Zb\Z6 Uncheck for the complete set \Zn" \
+" mkspecs" "linux-SB only" on "\Zb\Z6 Uncheck for the complete set \Zn" \
 2> $TMPVARS/TQT_OPTS
 
 

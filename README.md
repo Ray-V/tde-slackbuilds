@@ -67,7 +67,7 @@ See the READMEs in Core/tdeedu, Apps/k3b, Apps/klamav, and Misc/inkscape for det
 ***Required packages*** for a basic working TDE are:  
 ```
 Deps/tqt
-Deps/tqtinterface
+Deps/tqtinterface [§]
 Deps/arts
 Deps/dbus-tqt
 Deps/dbus-1-tqt
@@ -76,7 +76,8 @@ Deps/libart-lgpl
 Core/tdelibs
 Core/tdebase
 ```
-The cmake-trinity package is downloaded with the first archive, usually tqt.
+The cmake-trinity package is downloaded with the first archive, usually tqt.  
+[§] Removed for 14.2.0
 
 ---
 

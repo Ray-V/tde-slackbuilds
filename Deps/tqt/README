@@ -24,6 +24,6 @@ It will be installed to the TDE binary directory as 'regextester'.
 For an introduction to regex, from a konsole:
  'khelpcenter help:/kate/regular-expressions.html'
 
-Guidance on what the tqt regex engine supports is given in ntqregexp.html which will be installed to:
- '<TDE-installation-directory>/doc/tqt-<tde-version>/ntqregexp.html'
+Guidance on what the tqt regex engine supports is given in {n,}tqregexp.html which will be installed to:
+ '<TDE-installation-directory>/doc/tqt-<tde-version>/{n,}tqregexp.html'
  

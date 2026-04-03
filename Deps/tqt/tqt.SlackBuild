@@ -36,18 +36,16 @@ getsource_fn
 
 untar_fn
 
-## add -march, -mtune and no_warn options to CFLAGS where they've been set in BUILD-TDE.sh
-sed -i "s|^QMAKE_CFLAGS[^_].*$|& $SET_march ${NO_WARN:-}|" mkspecs/linux-g++/qmake.conf
-sed -i "s|CONFIG.*$|& ${NO_WARN:+warn_off}|" mkspecs/linux-g++/qmake.conf
-
-## RPATH is set to $ORIGIN/../lib to locate libs during the build
-## and added during configure with the -R option
-## lib suffix might be 64
-## add -headerdir as set in configure
-## allow building with clang, either build-time or run-time
-[[ ! $(grep COMPILER mkspecs/linux-g++/qmake.conf) ]] && {
-echo $'--- mkspecs/linux-g++/qmake.conf
-+++ mkspecs/linux-g++/qmake.conf
+## only need one mkspecs/linux-* for any gcc/clang 32/64 bit SlackBuild ..
+(cd mkspecs
+cp -a linux-g++ linux-SB
+[[ $TQT_OPTS == *mkspecs* ]] && GLOBIGNORE=linux-SB && rm -rf *
+: # override exit 1 if TQT_OPTS doesn't include mkspecs
+)
+## .. and modify qmake.conf for that specific use
+[[ ! $(grep COMPILER mkspecs/linux-SB/qmake.conf) ]] && {
+echo $'--- mkspecs/linux-SB/qmake.conf
++++ mkspecs/linux-SB/qmake.conf
 @@ -11 +11 @@
 -QMAKE_CC		= gcc
 +QMAKE_CC		= $(COMPILER)
@@ -76,10 +74,14 @@ echo $'--- mkspecs/linux-g++/qmake.conf
 +QMAKE_RPATH =
 ' | patch -p0
 
+## add -march, -mtune and no_warn options to CFLAGS where they've been set in BUILD-TDE.sh
+sed -i "s|^QMAKE_CFLAGS[^_].*$|& $SET_march ${NO_WARN:-}|" mkspecs/linux-SB/qmake.conf
+sed -i "s|CONFIG.*$|& ${NO_WARN:+warn_off}|" mkspecs/linux-SB/qmake.conf
+}
+
 ## development builds work-around for configure check for compiler support for C++17 standard
 [[ $TDEVERSION != 14.1.5 ]] && {
 sed -i 's|COMPILER=`sed.*$|#&\n## modified for SlackBuild ..\nCOMPILER=$COMPILER_CXX|' configure
-}
 }
 
 ## don't install html docs if 'nodocs' has been selected
@@ -101,13 +103,6 @@ sed -i '/phrasebooks/d' tools/linguist/linguist/linguist.pro
 sed -i '/templates/d' tools/designer/designer/designer.pro
 }
 
-## only need linux-g++
-[[ $TQT_OPTS == *mkspecs* ]] && {
-(cd mkspecs
-GLOBIGNORE=linux-g++
-rm -rf *)
-}
-
 ## install desktop files to applications/tde as for the other TDE desktop files
 sed -i 's|desktop.path = $$share.path/applications|&/tde|' tools/assistant/assistant.pro
 sed -i 's|desktop.path = $$share.path/applications|&/tde|' tools/qtconfig/qtconfig.pro
@@ -120,10 +115,14 @@ chown_fn
 
 #cd_builddir_fn - don't use
 
-## datadir is where mkspecs is installed
-## gcc visibility hidden is the default in mkspecs/..qmake.conf
+## -platform sets the configuration using the linux-SB/qmake.conf created for this SlackBuild
+## -datadir is where mkspecs is installed
+## gcc visibility hidden is the default in qmake.conf
+## RPATH is set to $ORIGIN/../lib to locate libs during the build and added during configure with the -R option
+## $INST_RPATH added for run-time RPATH
 echo "yes" | \
  ./configure \
+ -platform linux-SB \
  -no-exceptions \
  -prefix $TQTDIR \
  -libdir $TQTDIR/lib$LIBDIRSUFFIX \
@@ -161,7 +160,7 @@ echo "yes" | \
  -plugin-style-sgi \
  -plugin-style-windows \
  -fast \
- -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib:$INST_RPATH\' ## $INST_RPATH added for run-time RPATH
+ -R-Wl,-rpath,\'\\\$\$ORIGIN/../lib:$INST_RPATH\'
 
 #| cc1plus: error: one or more PCH files were found, but they were invalid
 #| <command-line>: fatal error: tqtdesignercore: No such file or directory
@@ -170,7 +169,8 @@ echo "yes" | \
 sed -i 's|./qmake_image_collection.o:.*$|& tqtdesignercore.gch/c++|' tools/designer/designer/Makefile
 
 ## don't build tutorial and examples which won't be installed because the release version is being built
-make -i $NUMJOBS symlinks src-qmake src-moc sub-src sub-tools || exit 1
+[[ $TDEVERSION == 14.2.0 ]] && PFX_1420=tq
+make -i $NUMJOBS symlinks src-qmake src-${PFX_1420:-}moc sub-src sub-tools || exit 1
 make install INSTALL_ROOT=$PKG || exit 1
 
 ## for a minimal packaging
@@ -357,7 +357,7 @@ EOF
 
 ## This could be a first build of tqt, so build with the packaging directory binaries
 $PKG$INSTALL_TDE/bin/tqmake -project -o regextester.pro
-$PKG$INSTALL_TDE/bin/tqmake TARGET=regextester -spec $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/linux-g++
+$PKG$INSTALL_TDE/bin/tqmake TARGET=regextester -spec $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/linux-SB
 
 sed -i "s|-ltqt-mt|$PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/libtqt-mt.so.3|" Makefile
 sed -i "s|tqmake|$PKG$INSTALL_TDE/bin/tqmake|" Makefile
@@ -368,11 +368,16 @@ strip regextester
 
 cp regextester $PKG$INSTALL_TDE/bin
 
+## highlight what isn't supported ..
+[[ $TDEVERSION != 14.2.0 ]] && pfx_1420=n
 grep -A 10 "A Small Application" regexptester.doc | sed 's|\\title ||' > $PKG$INSTALL_TDE/doc/$PRGNAM-$TDEVERSION/regextester.doc
-sed "s|Perl's lookbehind|<span style='background-color:yellow'>&|;\
-s|are not supported|&</span>|;\
-s|there are no \\\A, \\\Z or \\\z|<span style='background-color:yellow'>&|;\
-504s|assertions|&</span>|" ../../doc/html/ntqregexp.html > $PKG$INSTALL_TDE/doc/$PRGNAM-$TDEVERSION/ntqregexp.html
+
+sed "s|there are no \\\A, \\\Z or \\\z|<span style='background-color:yellow'>&|;\
+s|in a loop|&</span>|;\
+s|Perl's extended <tt>/x</tt> syntax is not supported|<span style='background-color:yellow'>&</span>|;\
+s|Perl's lookbehind|<span style='background-color:yellow'>&|;\
+s|are not supported|&</span>|\
+" ../../doc/html/${pfx_1420:-}tqregexp.html > $PKG$INSTALL_TDE/doc/$PRGNAM-$TDEVERSION/${pfx_1420:-}tqregexp.html
 }
 
 makepkg_fn
