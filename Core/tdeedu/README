@@ -1,18 +1,2 @@
-The Kalzium Chemical Equation Solver needs OCaml, and the FaCiLe module.
-
-tdeedu.SlackBuild checks whether ocaml *and* facile are installed. If not, and the source archives are in the 'src' directory, they are then built, packaged, and installed.
-
-Download from:
-https://github.com/ocaml/ocaml/archive/4.05.0.tar.gz
-http://www.recherche.enac.fr/opti/facile/distrib/facile-1.1.3.tar.gz
-
-As I'm not aware of any other uses, the builds have not been added to the build list and the source archives will have to be downloaded manually prior to the build. I believe that ocaml and facile are only build-time requirements and if so can be removed when the tdeedu build has completed - but won't know for sure until the crash has been fixed.
-
-If kalzium crashes when trying to use the equation solver, there is an open issue @ https://mirror.git.trinitydesktop.org/gitea/TDE/tdeedu/issues/8.
-
-If it works for you, or the crash is caused by a problem with the build, please raise an issue here to let me know.
-
-------------------------------
-
 The page/paper size can be set with the command line option PS= or will default to the size set for the system locale.
  

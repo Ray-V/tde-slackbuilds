@@ -71,14 +71,14 @@ SRCDIR=$BUILD_TDE_ROOT/src
 SB_SRCDIR=$(cd $(dirname $0); pwd)
 
 ## for 14.0.11 onwards, check for cmake archive ..
-[[ $TDEVERSION == 14.1.5 && ! -s $SRCDIR/cmake-$TDEVERSION.tar.xz ]] && (
+[[ $TDEVERSION == 14.1.6 && ! -s $SRCDIR/cmake-$TDEVERSION.tar.xz ]] && (
     echo -e "\nDownloading to $SRCDIR"
     wget -T 20 -O $SRCDIR/cmake-$TDEVERSION.tar.xz $TDE_MIRROR/releases/R$TDEVERSION/main/dependencies/tde-cmake-trinity-$TDEVERSION.tar.xz
     echo -e "----\n"
 )
 
-## if 14.1.5 or misc, download archive:
-[[ $TDEVERSION == 14.1.5 || $TDEMIR_SUBDIR == misc ]] && {
+## if 14.1.6 or misc, download archive:
+[[ $TDEVERSION == 14.1.6 || $TDEMIR_SUBDIR == misc ]] && {
 ## check for and remove any zero byte archive files
 [[ ! -s $SRCDIR/$PRGNAM-$VERSION.${ARCHIVE_TYPE:-"tar.xz"} ]] && \
 rm $SRCDIR/$PRGNAM-$VERSION.${ARCHIVE_TYPE:-"tar.xz"} 2>/dev/null || true
@@ -114,7 +114,7 @@ if [ "$P1" == "--download" ]; then
   exit 0
 fi
 } || {
-## otherwise, not R14.1.5 nor misc, and we are creating/updating git,
+## otherwise, not R14.1.6 nor misc, and we are creating/updating git,
 ## so [1] start with admin/cmake:
 [[ $(cat $TMPVARS/DL_CGIT) == yes ]] && {
 cd $BUILD_TDE_ROOT/src/cgit
@@ -272,7 +272,7 @@ cd $TMP_BUILD/tmp-$PRGNAM
 ##
 ## [1] firstly test for R14 or misc ..
 ##
-[[ $TDEVERSION == 14.1.5 || $TDEMIR_SUBDIR == misc ]] && {
+[[ $TDEVERSION == 14.1.6 || $TDEMIR_SUBDIR == misc ]] && {
 ## unpack R14 or misc
 echo -e "\n unpacking $(basename $SOURCE) ... \n"
 tar -xf $SOURCE
@@ -280,13 +280,25 @@ tar -xf $SOURCE
 [[ $TDEMIR_SUBDIR != misc ]] && [[ -e $(ls $PRGNAM*/CMakeLists.txt) ]] && (
 cd $PRGNAM*
 tar xf $SRCDIR/cmake-$TDEVERSION.tar.xz --strip-components=1 --one-top-level=cmake
+## reverse commit 5d635ba561bb because tde-cmake is not installed for tde-slackbuilds
+patch -p0 << EOF
+--- cmake/CMakeLists.txt
++++ cmake/CMakeLists.txt
+@@ -11,0 +12,3 @@
++## Process only if it is built as a standalone package
++if( "\${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "\${CMAKE_SOURCE_DIR}" )
++
+@@ -34,0 +38,2 @@
++
++endif()
+EOF
 )
 
 : # if this fails, don't try a git build, and go to [3]
 
 } || {
 
-## [2] not 14.1.5 nor misc, so must be git ..
+## [2] not 14.1.6 nor misc, so must be git ..
 [[ $TDEVERSION == 14.2.0 ]] && DEV_BRANCH=master || DEV_BRANCH=r14.1.x
 
 ## copy git content to build area:
@@ -309,7 +321,7 @@ echo -e "\n copying cmake git sources to build area ... \n"
 rm -rf .git/worktrees/*
 git worktree add -d $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/cmake/ ${FEATc:-$DEV_BRANCH}
 #
-## reverse commit 5d635ba561bb because tde-cmake is not installed for tde-slackbuilds [ TODO for 14.1.6]
+## reverse commit 5d635ba561bb because tde-cmake is not installed for tde-slackbuilds
 (cd $TMP_BUILD/tmp-$PRGNAM/$PRGNAM/cmake
 git revert --no-edit 5d635ba561bb
 )

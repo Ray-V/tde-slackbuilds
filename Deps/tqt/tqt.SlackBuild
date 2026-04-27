@@ -43,7 +43,6 @@ cp -a linux-g++ linux-SB
 : # override exit 1 if TQT_OPTS doesn't include mkspecs
 )
 ## .. and modify qmake.conf for that specific use
-[[ ! $(grep COMPILER mkspecs/linux-SB/qmake.conf) ]] && {
 echo $'--- mkspecs/linux-SB/qmake.conf
 +++ mkspecs/linux-SB/qmake.conf
 @@ -11 +11 @@
@@ -77,12 +76,9 @@ echo $'--- mkspecs/linux-SB/qmake.conf
 ## add -march, -mtune and no_warn options to CFLAGS where they've been set in BUILD-TDE.sh
 sed -i "s|^QMAKE_CFLAGS[^_].*$|& $SET_march ${NO_WARN:-}|" mkspecs/linux-SB/qmake.conf
 sed -i "s|CONFIG.*$|& ${NO_WARN:+warn_off}|" mkspecs/linux-SB/qmake.conf
-}
 
-## development builds work-around for configure check for compiler support for C++17 standard
-[[ $TDEVERSION != 14.1.5 ]] && {
+## work-around for configure check for compiler support for C++17 standard
 sed -i 's|COMPILER=`sed.*$|#&\n## modified for SlackBuild ..\nCOMPILER=$COMPILER_CXX|' configure
-}
 
 ## don't install html docs if 'nodocs' has been selected
 [[ $TQT_OPTS == *nodocs* ]] && sed -i '/htmldocs/d' src/qt_install.pri

@@ -24,7 +24,7 @@
 #   SUCH DAMAGE.
 
 PRGNAM=inkscape
-VERSION=1.4.2
+VERSION=1.4.3
 DC_VERSION=3.4.0
 BUILD=${BUILD:-1}
 
@@ -147,6 +147,11 @@ sed -i 's|")|" README)|' share/attributes/CMakeLists.txt
 sed -i 's|    PATTERN "print_win32_vector|    PATTERN "inkex/gui/README.md"\
     PATTERN "other/clipart/README.md"\
 &|' share/CMakeLists.txt
+
+## inkscape 1.4.3 needs patching for poppler-26.01 to 26.04
+## https://www.linuxfromscratch.org/blfs/view/svn/xsoft/inkscape.html
+##   » https://www.linuxfromscratch.org/patches/blfs/svn/inkscape-1.4.3-poppler-26_fixes-2.patch
+pkg-config --atleast-version=26.01 poppler && patch -p0 < $SB_SRCDIR/poppler-26-patch
 
 listdocs_fn
 

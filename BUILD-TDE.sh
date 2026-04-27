@@ -101,7 +101,7 @@ Set the version of TDE to be built.
  
 " \
 13 75 3 \
-"14.1.5" "the R14.1.5 release - source from archives" \
+"14.1.6" "the R14.1.6 release - source from archives" \
 "14.1.x" "next release preview - source from Trinity git" \
 "14.2.0" "R14.2.0 development - source from Trinity git" \
 2> $TMPVARS/TDEVERSION
@@ -763,8 +763,8 @@ Create and/or update the git repositories local copies.
 
 
 #rm -f $TMPVARS/PRE_DOWNLOAD  ## this is done at the head of this script
-[[ $(cat $TMPVARS/TDEVERSION) == 14.1.5 ]] && PRE_DOWNLOAD_MESSAGE="Only the source archives not already in 'src' will be downloaded." || PRE_DOWNLOAD_MESSAGE="All cgit sources for the build list packages will be cloned/updated.\nMisc archives will only be downloaded if not already in 'src'."
-## testing for cgit!=no will allow =yes, or null, which is the 14.1.5 build case
+[[ $(cat $TMPVARS/TDEVERSION) == 14.1.6 ]] && PRE_DOWNLOAD_MESSAGE="Only the source archives not already in 'src' will be downloaded." || PRE_DOWNLOAD_MESSAGE="All cgit sources for the build list packages will be cloned/updated.\nMisc archives will only be downloaded if not already in 'src'."
+## testing for cgit!=no will allow =yes, or null, which is the 14.1.6 build case
 [[ $(cat $TMPVARS/DL_CGIT) != no ]] &&  {
 dialog --cr-wrap --no-shadow --colors --defaultno --title " Only download sources " --yesno \
 "
