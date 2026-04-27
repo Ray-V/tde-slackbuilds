@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.1.5 have been verified for 64-bit arm only].
+[Edit: builds for R14.1.6 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -590,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.5</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.6</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -830,10 +830,10 @@ ltoolupdate_fn ()
 {
 {
 <span class="dastx">##</span> look in SYSROOT for headers and libs, and
-<span class="dastx">##</span> edit hard coded tqt directory for tqt3/tqtinterface installed to TQTDIR [!= /usr]
+<span class="dastx">##</span> edit hard coded tqt directory for tqt/tqtinterface installed to TQTDIR [!= /usr]
 sed -i "s|/usr/include/tqt\"|$SYSROOT$TQTDIR/include/tqt\"|" admin/acinclude.m4.in
-sed -i "s|/usr/include/tqt3|$SYSROOT$TQTDIR/include/tqt|" admin/acinclude.m4.in
-sed -i "s|/usr/lib/tqt3|$SYSROOT$TQTDIR|" admin/acinclude.m4.in
+sed -i "s|/usr/include/tqt|$SYSROOT$TQTDIR/include/tqt|" admin/acinclude.m4.in
+sed -i "s|/usr/lib/tqt|$SYSROOT$TQTDIR|" admin/acinclude.m4.in
 <span class="dastx">##</span> $LIBDIRSUFFIX isn't required as it's built-in as ${tdelibsuff} in acinclude.m4.in
 sed -i "s|/usr/lib|$SYSROOT&amp;|g" admin/acinclude.m4.in
 <span class="dastx">##</span> correct the variable name in error message
@@ -903,7 +903,7 @@ LIBDIRSUFFIX_x86="64"
 </code>
 <span class="dastx">##</span> Install x86 packages to temporary location on BUILD system
 <code class="thtwo">cd <span class="comment">/location_of_pre-built_TDE_x86_packages</span>
-ROOT=/tmp/x86/ installpkg tqt3-$TDE_VERSION-x86_64-*.txz tqtinterface-$TDE_VERSION-x86_64-*.txz dbus-1-tqt-$TDE_VERSION-x86_64-*.txz tdelibs-$TDE_VERSION-x86_64-*.txz libart*lgpl-$TDE_VERSION-x86_64-*.txz
+ROOT=/tmp/x86/ installpkg tqt-$TDE_VERSION-x86_64-*.txz tqtinterface-$TDE_VERSION-x86_64-*.txz dbus-1-tqt-$TDE_VERSION-x86_64-*.txz tdelibs-$TDE_VERSION-x86_64-*.txz libart*lgpl-$TDE_VERSION-x86_64-*.txz
 </code>
 <span class="dastx">##</span> Copy tqmoc, and meinproc and its dependent libraries, to a convenient location, $SYSROOT/x86
 <code class="thtwo">cd $SYSROOT/x86
@@ -934,11 +934,11 @@ cp $SYSROOT/x86/meinproc $INSTALL_TDE/bin/meinproc-x86
 <!-- tqt - start -->
 <a name="close_tqt"></a>
 <br>
-<span class="tabs reqd"><a href="#tqt">&hellip; tqt3</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;
+<span class="tabs reqd"><a href="#tqt">&hellip; tqt</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;
 </a></span>
 <div id="tqt" class="tab"><div class="b_32bit"><span class="tabs"><a href="#close_tqt">close</a></span>
 <code><code class="thtwo">cd /
-PRGNAM=tqt3
+PRGNAM=tqt
 VERSION=$TDE_VERSION
 BUILD=$BUILD
 TMP=/tmp/build
@@ -961,16 +961,17 @@ sed -i '/assistanttranslations/d' tools/assistant/assistant.pro
 sed -i '/phrasebooks/d' tools/linguist/linguist/linguist.pro
 sed -i '/templates/d' tools/designer/designer/designer.pro
 
-<span class="dastx">##</span> only need linux-g++
+<span class="dastx">##</span> create a linux-SB for SlackBuilds
 (cd mkspecs
-GLOBIGNORE=linux-g++
+cp -a linux-g++ linux-SB
+GLOBIGNORE=linux-SB
 rm -rf *)
 </code>
 <span class="dastx">##</span> RPATH is to be set as $ORIGIN/../lib, so don't need absolute libs directory built in -
-<span class="dastx">##</span> Allow setting CC/CXX for linux-g++/qmake.conf -
+<span class="dastx">##</span> Allow setting CC/CXX for linux-SB/qmake.conf -
 <span class="dastx">##</span> Set correct paths for includes and libs -
-<code class="thtwo">echo $'--- mkspecs/linux-g++/qmake.conf
-+++ mkspecs/linux-g++/qmake.conf
+<code class="thtwo">echo $'--- mkspecs/linux-SB/qmake.conf
++++ mkspecs/linux-SB/qmake.conf
 @@ -11 +11 @@
 -QMAKE_CC<span class="bkslt">\t</span><span class="bkslt">\t</span>= gcc
 +QMAKE_CC<span class="bkslt">\t</span><span class="bkslt">\t</span>= $(COMPILER)
@@ -1012,7 +1013,7 @@ sed -i "s|\"/lib|\"$SYSROOT/lib$LIBDIRSUFFIX|" config.tests/unix/checkavail
 sed -i "s|/usr|$SYSROOT&amp;|" config.tests/unix/checkavail
 </code>
 <span class="dastx">##</span> Set up an arm mkspecs to use for this build where the system includes and libs paths are set to SYSROOT
-<code class="thtwo">cp -a mkspecs/linux-g++ mkspecs/linux-arm-g++
+<code class="thtwo">cp -a mkspecs/linux-SB mkspecs/linux-arm-g++
 
 echo $'--- mkspecs/linux-arm-g++/qmake.conf
 +++ mkspecs/linux-arm-g++/qmake.conf
@@ -1029,6 +1030,9 @@ echo $'--- mkspecs/linux-arm-g++/qmake.conf
 -QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= /usr/lib'"$LIBDIRSUFFIX"$'
 +QMAKE_INCDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/include/GL
 +QMAKE_LIBDIR_OPENGL<span class="bkslt">\t</span>= $(SYSROOT)/usr/lib'"$LIBDIRSUFFIX" | patch -p0
+</code>
+<span class="dastx">##</span>  Work-around for configure check for compiler support for C++17 standard
+<code class="thtwo">sed -i 's|COMPILER=`sed.*$|#&amp;\n## modified for SlackBuild ..\nCOMPILER=$COMPILER_CXX|' configure
 </code>
 <span class="dastx">##</span> Set -platform to arm so that tqmoc is built as an arm binary for installation on RPi3.
 <span class="dastx">##</span> Set -rpath so that libtqt-mt.so.3 can be found during the build
@@ -1103,16 +1107,16 @@ sed -i "s|-L\$(S.*X)||g;s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/pkgconf
 
 (cd $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/tqt/mkspecs/
 rm -rf linux-arm-g++
-ln -sf linux-g++ default)
+ln -sf linux-SB default)
 </code>
 <code class="thtwo">mkdir -p $PKG/etc/profile.d
 
 echo '#!'"/bin/sh
 # Environment path variable for the tQt package.
 export TQTDIR=$TQTDIR
-" > $PKG/etc/profile.d/tqt3.sh
+" > $PKG/etc/profile.d/tqt.sh
 
-chmod 755 $PKG/etc/profile.d/tqt3.sh
+chmod 755 $PKG/etc/profile.d/tqt.sh
 </code>
 <code class="thtwo">strip_fn
 </code>
@@ -1273,7 +1277,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_ALSA="ON" \
     -DWITH_AUDIOFILE="ON" \
@@ -1346,7 +1350,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -Wno-dev \
     ..
 
@@ -1404,7 +1408,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DWITH_GCC_VISIBILITY="ON" \
     -Wno-dev \
     ..
@@ -1462,7 +1466,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DMAN_INSTALL_DIR=/usr/man \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
@@ -1525,7 +1529,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DLIB_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX \
     -DBUILD_TQCA="ON" \
     -DBUILD_TQCA_TLS="ON" \
@@ -1702,7 +1706,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DLIB_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX \
     -DCMAKE_SKIP_RPATH="OFF" \
     -DCMAKE_INSTALL_RPATH=$INSTALL_TDE/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
@@ -1734,7 +1738,7 @@ cmake \
     -DWITH_MITSHM="OFF" \
     -DWITH_NETWORK_MANAGER_BACKEND="ON" \
     -DWITH_OLD_XDG_STD="OFF" \
-    -DWITH_OPENEXR="ON" \
+    -DWITH_OPENEXR="OFF" \
     -DWITH_PCRE2="ON" \
     -DWITH_SSL="ON" \
     -DWITH_SUDO_TDESU_BACKEND="OFF" \
@@ -1920,7 +1924,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_ARTS="ON" \
@@ -1932,7 +1936,7 @@ cmake \
     -DWITH_LIBCONFIG="OFF" \
     -DWITH_LIBRAW1394="OFF" \
     -DWITH_LIBUSB="OFF" \
-    -DWITH_OPENEXR="ON" \
+    -DWITH_OPENEXR="OFF" \
     -DWITH_OPENGL="ON" \
     -DWITH_PAM="OFF" \
     -DWITH_PCRE2="ON" \
@@ -2365,14 +2369,13 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_ARTS="ON" \
     -DWITH_SDL="ON" \
     -DWITH_BERKELEY_DB="ON" \
     -DWITH_XMMS="OFF" \
-    -DWITH_TEST="OFF" \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
     -DBUILD_ATLANTIKDESIGNER=${ATLANTIKDESIGNER:-"OFF"} \
@@ -2455,7 +2458,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_DPMS="ON" \
@@ -2557,7 +2560,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_GCC_VISIBILITY="ON" \
@@ -3214,7 +3217,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
     -DWITH_PAPER="OFF" \
@@ -3308,7 +3311,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
@@ -3391,7 +3394,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
@@ -3474,7 +3477,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
     -DWITH_LIBIW="OFF" \
@@ -3514,7 +3517,6 @@ makepkg_fn
 PRGNAM=krusader
 VERSION=$TDE_VERSION
 BUILD=$BUILD
-I18N=$I18N
 TMP=/tmp/build
 rm -rf $TMP
 PKG=$TMP/package-$PRGNAM
@@ -3526,37 +3528,41 @@ untar_fn
 
 <span class="dastx">##</span> set support for additional language(s) as per I18N variable
 <span class="dastx">##</span> but only for languages available with this package
-langs="";for Lang in $I18N;do [[ -e translations/messages/krusader/$Lang.po ]] &amp;&amp; \
-langs="$langs $Lang.po";done
-sed -i "s|POFILES =.*$|POFILES =$langs|" translations/messages/krusader/Makefile.am
-
-[[ $I18N != *ru* ]] &amp;&amp; \
-sed -i 's| ru||' doc/Makefile.am
-
-ltoolupdate_fn
+<span class="dastx">##</span> [need to export LINGUAS to set it as an environment variable for cmake]
+[[ $I18N ]] &amp;&amp; TRANS=ON &amp;&amp; export LINGUAS=$I18N
 
 chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
-MOC=$SYSROOT/x86/tqmoc \
-MEINPROC=$INSTALL_TDE/bin/meinproc-x86 \
-../configure \
-   --prefix=$INSTALL_TDE \
-   --mandir=$INSTALL_TDE/man \
-   --enable-gcc-hidden-visibility \
-   --disable-rpath \
-   --host=$HOST
+cmake-toolchain_fn
+  cmake \
+    -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
+    -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
+    -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
+    -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_C_COMPILER=$COMPILER \
+    -DCMAKE_CXX_COMPILER=$COMPILER_CXX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
+    -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
+    -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
+    -DMAN_INSTALL_DIR=$INSTALL_TDE/man \
+    -DWITH_GCC_VISIBILITY="ON" \
+    -DBUILD_DOC="ON" \
+    -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
+    -DWITH_JAVASCRIPT="OFF" \
+    -DWITH_KONQUEROR="ON" \
+    -DWITH_ACL="ON" \
+    -Wno-dev \
+    ..
 
 make $NUMJOBS
 make DESTDIR=$PKG install
-
-<span class="dastx">##</span> remove xgcc paths in package
-sed -i "s|$XGCC_DIR/$HOST|/usr|g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/t*/*.la
-sed -i "s|$SYSROOT||g" $PKG$INSTALL_TDE/lib$LIBDIRSUFFIX/t*/*.la
 
 mangzip_fn
 
@@ -3598,6 +3604,11 @@ mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
+
+<span class="dastx">##</span> set support for additional language(s) as per I18N variable
+<span class="dastx">##</span> but only for languages available with this package
+<span class="dastx">##</span> [need to export LINGUAS to set it as an environment variable for cmake]
+[[ $I18N ]] &amp;&amp; TRANS=ON &amp;&amp; export LINGUAS=$I18N
 </code>
 These patches provide Kvkbd build options
 &bull; Use Win keys as modifier keys or for characters set with xmodmap.
@@ -3763,7 +3774,7 @@ cmake-toolchain_fn
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
-    -DBUILD_TRANSLATIONS="OFF" \
+    -DBUILD_TRANSLATIONS=${TRANS:-"OFF"} \
     -Wno-dev \
     ..
 
@@ -3838,7 +3849,7 @@ cmake-toolchain_fn
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_TDE \
     -DCMAKE_MODULE_PATH=$PWD/../cmake/modules \
-    -DLIB_SUFFIX=$LIBDIRSUFFIX \
+    -DCMAKE_INSTALL_LIBDIR=/lib$LIBDIRSUFFIX \
     -DPLUGIN_INSTALL_DIR=$INSTALL_TDE/lib$LIBDIRSUFFIX/$PLUGIN_INSTALL_DIR \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
@@ -3972,7 +3983,7 @@ git checkout gh-pages
         <p><a href="#Set_variables">build environment</a>
         <p><a href="#M_proc">tqmoc and meinproc</a>
         <p><b>Builds</b>
-        <p><a href="#tqt">&hellip; <span style="background: #E5F1FF;">tqt3</span></a>
+        <p><a href="#tqt">&hellip; <span style="background: #E5F1FF;">tqt</span></a>
         <p><a href="#tqtint">&hellip; <span style="background: #E5F1FF;">tqtinterface</span></a>
         <p><a href="#arts">&hellip; <span style="background: #E5F1FF;">arts</span></a>
         <p><a href="#dbus">&hellip; <span style="background: #E5F1FF;">dbus-tqt</span></a>
