@@ -33,6 +33,303 @@ getsource_fn
 
 untar_fn
 
+## patch for building with gcc-16 [c++20 default] - pulls/75
+[[ $TDEVERSION == 14.1.6 ]] && {
+patch -p0 << EOF
+--- umbrello/umbrello/classifier.cpp
++++ umbrello/umbrello/classifier.cpp
+@@ -380,5 +380,5 @@
+-            UMLClassifier *concept = dynamic_cast<UMLClassifier*>(obj);
+-            if (concept && (type == ALL || (!concept->isInterface() && type == CLASS)
+-                            || (concept->isInterface() && type == INTERFACE))
+-                        && (inheritingConcepts.findRef(concept) == -1))
+-                inheritingConcepts.append(concept);
++            UMLClassifier *umlConcept = dynamic_cast<UMLClassifier*>(obj);
++            if (umlConcept && (type == ALL || (!umlConcept->isInterface() && type == CLASS)
++                            || (umlConcept->isInterface() && type == INTERFACE))
++                        && (inheritingConcepts.findRef(umlConcept) == -1))
++                inheritingConcepts.append(umlConcept);
+@@ -397,5 +397,5 @@
+-    for (UMLClassifier *concept = list.first(); concept; concept = list.next())
++    for (UMLClassifier *umlConcept = list.first(); umlConcept; umlConcept = list.next())
+     {
+-        if (type == ALL || (!concept->isInterface() && type == CLASS)
+-                || (concept->isInterface() && type == INTERFACE))
+-            parentConcepts.append(concept);
++        if (type == ALL || (!umlConcept->isInterface() && type == CLASS)
++                || (umlConcept->isInterface() && type == INTERFACE))
++            parentConcepts.append(umlConcept);
+@@ -409,5 +409,5 @@
+-            UMLClassifier *concept = dynamic_cast<UMLClassifier*>(obj);
+-            if (concept && (type == ALL || (!concept->isInterface() && type == CLASS)
+-                            || (concept->isInterface() && type == INTERFACE))
+-                        && (parentConcepts.findRef(concept) == -1))
+-                parentConcepts.append(concept);
++            UMLClassifier *umlConcept = dynamic_cast<UMLClassifier*>(obj);
++            if (umlConcept && (type == ALL || (!umlConcept->isInterface() && type == CLASS)
++                            || (umlConcept->isInterface() && type == INTERFACE))
++                        && (parentConcepts.findRef(umlConcept) == -1))
++                parentConcepts.append(umlConcept);
+--- umbrello/umbrello/classifiercodedocument.cpp
++++ umbrello/umbrello/classifiercodedocument.cpp
+@@ -419,4 +419,4 @@
+-//      CPPSourceCodeDocument::CPPSourceCodeDocument(UMLClassifier * concept)
+-//       : ClassifierCodeDocument(concept)
+-//        ClassifierCodeDocument::ClassifierCodeDocument(concept)
+-//         init(concept);
++//      CPPSourceCodeDocument::CPPSourceCodeDocument(UMLClassifier * umlConcept)
++//       : ClassifierCodeDocument(umlConcept)
++//        ClassifierCodeDocument::ClassifierCodeDocument(umlConcept)
++//         init(umlConcept);
+--- umbrello/umbrello/codegenerator.cpp
++++ umbrello/umbrello/codegenerator.cpp
+@@ -322,3 +322,3 @@
+-    for (UMLClassifier *concept= concepts.first(); concept; concept= concepts.next())
++    for (UMLClassifier *umlConcept= concepts.first(); umlConcept; umlConcept= concepts.next())
+     {
+-        CodeDocument * doc = findCodeDocumentByClassifier(concept);
++        CodeDocument * doc = findCodeDocumentByClassifier(umlConcept);
+--- umbrello/umbrello/codegenerator.h
++++ umbrello/umbrello/codegenerator.h
+@@ -409,4 +409,4 @@
+-     * @param concept    The concept which was processed
++     * @param umlConcept The concept which was processed
+      * @param generated  Flag, set to true if generation was successful
+      */
+-    void codeGenerated(UMLClassifier* concept, bool generated);
++    void codeGenerated(UMLClassifier* umlConcept, bool generated);
+--- umbrello/umbrello/codegenerators/cppcodegenerator.cpp
++++ umbrello/umbrello/codegenerators/cppcodegenerator.cpp
+@@ -215,6 +215,6 @@
+-    for (UMLClassifier *concept= concepts.first(); concept; concept= concepts.next())
++    for (UMLClassifier *umlConcept= concepts.first(); umlConcept; umlConcept= concepts.next())
+     {
+-        CodeDocument * doc = findCodeDocumentByClassifier(concept);
++        CodeDocument * doc = findCodeDocumentByClassifier(umlConcept);
+         if(doc)
+             docs.append(doc);
+-        CodeDocument * hdoc = findHeaderCodeDocumentByClassifier(concept);
++        CodeDocument * hdoc = findHeaderCodeDocumentByClassifier(umlConcept);
+--- umbrello/umbrello/codegenerators/cppheaderclassdeclarationblock.cpp
++++ umbrello/umbrello/codegenerators/cppheaderclassdeclarationblock.cpp
+@@ -131,4 +131,4 @@
+-    for (UMLClassifier * concept= superclasses.first(); concept; concept = superclasses.next())
++    for (UMLClassifier * umlConcept= superclasses.first(); umlConcept; umlConcept = superclasses.next())
+     {
+-        startText.append(concept->getVisibility().toString() + ' ' +
+-                         CodeGenerator::cleanName(concept->getName()));
++        startText.append(umlConcept->getVisibility().toString() + ' ' +
++                         CodeGenerator::cleanName(umlConcept->getName()));
+--- umbrello/umbrello/codegenerators/cppheadercodedocument.cpp
++++ umbrello/umbrello/codegenerators/cppheadercodedocument.cpp
+@@ -54,2 +54,2 @@
+-CPPHeaderCodeDocument::CPPHeaderCodeDocument ( UMLClassifier * concept )
+-        : ClassifierCodeDocument (concept)
++CPPHeaderCodeDocument::CPPHeaderCodeDocument ( UMLClassifier * umlConcept )
++        : ClassifierCodeDocument (umlConcept)
+--- umbrello/umbrello/codegenerators/cppsourcecodedocument.cpp
++++ umbrello/umbrello/codegenerators/cppsourcecodedocument.cpp
+@@ -44,2 +44,2 @@
+-CPPSourceCodeDocument::CPPSourceCodeDocument ( UMLClassifier * concept )
+-        : ClassifierCodeDocument (concept) {
++CPPSourceCodeDocument::CPPSourceCodeDocument ( UMLClassifier * umlConcept )
++        : ClassifierCodeDocument (umlConcept) {
+--- umbrello/umbrello/codegenerators/dwriter.cpp
++++ umbrello/umbrello/codegenerators/dwriter.cpp
+@@ -351,2 +351,2 @@
+-        for (UMLClassifier * concept= superclasses.first(); concept; concept = superclasses.next()) {
+-            d << cleanName(concept->getName());
++        for (UMLClassifier * umlConcept= superclasses.first(); umlConcept; umlConcept = superclasses.next()) {
++            d << cleanName(umlConcept->getName());
+@@ -360,2 +360,2 @@
+-        for (UMLClassifier * concept= superinterfaces.first(); concept; concept = superinterfaces.next()) {
+-            d << cleanName(concept->getName());
++        for (UMLClassifier * umlConcept= superinterfaces.first(); umlConcept; umlConcept = superinterfaces.next()) {
++            d << cleanName(umlConcept->getName());
+@@ -777,6 +777,6 @@
+-    for (UMLClassifier *concept= superClasses.first(); concept; concept = superClasses.next())
++    for (UMLClassifier *umlConcept= superClasses.first(); umlConcept; umlConcept = superClasses.next())
+     {
+-        getSuperImplementedOperations(concept, yetImplementedOpList, toBeImplementedOpList, (concept->isInterface() && noClassInPath));
+-        UMLOperationList opl = concept->getOpList();
++        getSuperImplementedOperations(umlConcept, yetImplementedOpList, toBeImplementedOpList, (umlConcept->isInterface() && noClassInPath));
++        UMLOperationList opl = umlConcept->getOpList();
+         for (UMLOperation *op = opl.first(); op; op = opl.next()) {
+-            if (concept->isInterface() && noClassInPath) {
++            if (umlConcept->isInterface() && noClassInPath) {
+--- umbrello/umbrello/codegenerators/javaclassdeclarationblock.cpp
++++ umbrello/umbrello/codegenerators/javaclassdeclarationblock.cpp
+@@ -123,3 +123,3 @@
+-    for (UMLClassifier * concept= superclasses.first(); concept; concept = superclasses.next())
++    for (UMLClassifier * umlConcept= superclasses.first(); umlConcept; umlConcept = superclasses.next())
+     {
+-        startText.append(parentDoc->cleanName(concept->getName()));
++        startText.append(parentDoc->cleanName(umlConcept->getName()));
+@@ -141,3 +141,3 @@
+-    for (UMLClassifier * concept= superinterfaces.first(); concept; concept = superinterfaces.next())
++    for (UMLClassifier * umlConcept= superinterfaces.first(); umlConcept; umlConcept = superinterfaces.next())
+     {
+-        startText.append(parentDoc->cleanName(concept->getName()));
++        startText.append(parentDoc->cleanName(umlConcept->getName()));
+--- umbrello/umbrello/codegenerators/javaclassifiercodedocument.cpp
++++ umbrello/umbrello/codegenerators/javaclassifiercodedocument.cpp
+@@ -47,2 +47,2 @@
+-JavaClassifierCodeDocument::JavaClassifierCodeDocument ( UMLClassifier * concept )
+-        : ClassifierCodeDocument (concept) {
++JavaClassifierCodeDocument::JavaClassifierCodeDocument ( UMLClassifier * umlConcept )
++        : ClassifierCodeDocument (umlConcept) {
+--- umbrello/umbrello/codegenerators/javawriter.cpp
++++ umbrello/umbrello/codegenerators/javawriter.cpp
+@@ -316,5 +316,5 @@
+-    UMLClassifier *concept;
++    UMLClassifier *umlConcept;
+     UMLClassifierList superclasses = c->findSuperClassConcepts(UMLClassifier::CLASS);
+ 
+     int i = 0;
+-    for (concept= superclasses.first(); concept; concept = superclasses.next())
++    for (umlConcept= superclasses.first(); umlConcept; umlConcept = superclasses.next())
+@@ -331,7 +331,7 @@
+-        java<< cleanName(concept->getName());
++        java<< cleanName(umlConcept->getName());
+         i++;
+     }
+ 
+     UMLClassifierList superInterfaces = c->findSuperClassConcepts(UMLClassifier::INTERFACE);
+     i = 0;
+-    for (concept= superInterfaces.first(); concept; concept = superInterfaces.next())
++    for (umlConcept= superInterfaces.first(); umlConcept; umlConcept = superInterfaces.next())
+@@ -351,1 +351,1 @@
+-        java<< cleanName(concept->getName());
++        java<< cleanName(umlConcept->getName());
+@@ -754,6 +754,6 @@
+-    for (UMLClassifier *concept= superClasses.first(); concept; concept = superClasses.next())
++    for (UMLClassifier *umlConcept= superClasses.first(); umlConcept; umlConcept = superClasses.next())
+     {
+-        getSuperImplementedOperations(concept, yetImplementedOpList, toBeImplementedOpList, (concept->isInterface() && noClassInPath));
+-        UMLOperationList opl = concept->getOpList();
++        getSuperImplementedOperations(umlConcept, yetImplementedOpList, toBeImplementedOpList, (umlConcept->isInterface() && noClassInPath));
++        UMLOperationList opl = umlConcept->getOpList();
+         for (UMLOperation *op = opl.first(); op; op = opl.next()) {
+-            if (concept->isInterface() && noClassInPath) {
++            if (umlConcept->isInterface() && noClassInPath) {
+--- umbrello/umbrello/codegenerators/rubyclassdeclarationblock.cpp
++++ umbrello/umbrello/codegenerators/rubyclassdeclarationblock.cpp
+@@ -114,14 +114,14 @@
+-    for (UMLClassifier * concept= superclasses.first(); concept; concept = superclasses.next()) {
++    for (UMLClassifier * umlConcept= superclasses.first(); umlConcept; umlConcept = superclasses.next()) {
+         if (i == 0) {
+-            startText.append(TQString(" < ") + RubyCodeGenerator::cppToRubyType(concept->getName()) + endLine);
++            startText.append(TQString(" < ") + RubyCodeGenerator::cppToRubyType(umlConcept->getName()) + endLine);
+         } else {
+             // After the first superclass name in the list, assume the classes
+             // are ruby modules that can be mixed in,
+-            startText.append("include " + RubyCodeGenerator::cppToRubyType(concept->getName()) + endLine);
++            startText.append("include " + RubyCodeGenerator::cppToRubyType(umlConcept->getName()) + endLine);
+         }
+         i++;
+     }
+ 
+     // Write out the interfaces we 'implement'. Are these modules to be mixed in, in Ruby?
+-    for (UMLClassifier * concept= superinterfaces.first(); concept; concept = superinterfaces.next()) {
+-        startText.append(TQString("include ") + RubyCodeGenerator::cppToRubyType(concept->getName()) + endLine);
++    for (UMLClassifier * umlConcept= superinterfaces.first(); umlConcept; umlConcept = superinterfaces.next()) {
++        startText.append(TQString("include ") + RubyCodeGenerator::cppToRubyType(umlConcept->getName()) + endLine);
+--- umbrello/umbrello/codegenerators/rubyclassifiercodedocument.cpp
++++ umbrello/umbrello/codegenerators/rubyclassifiercodedocument.cpp
+@@ -48,2 +48,2 @@
+-RubyClassifierCodeDocument::RubyClassifierCodeDocument ( UMLClassifier * concept )
+-        : ClassifierCodeDocument (concept) {
++RubyClassifierCodeDocument::RubyClassifierCodeDocument ( UMLClassifier * umlConcept )
++        : ClassifierCodeDocument (umlConcept) {
+--- umbrello/umbrello/codegenerators/rubywriter.cpp
++++ umbrello/umbrello/codegenerators/rubywriter.cpp
+@@ -101,12 +101,12 @@
+-    UMLClassifier *concept;
++    UMLClassifier *umlConcept;
+ 
+     h<< "class " << cppToRubyType(classname) << (superclasses.count() > 0 ? " < ":"");
+ 
+     int i = 0;
+-    for (concept = superclasses.first(); concept; concept = superclasses.next()) {
++    for (umlConcept = superclasses.first(); umlConcept; umlConcept = superclasses.next()) {
+         if (i == 0) {
+-            h << cppToRubyType(concept->getName()) << m_endl;
++            h << cppToRubyType(umlConcept->getName()) << m_endl;
+         } else {
+             // Assume ruby modules that can be mixed in, after the first
+             // superclass name in the list
+-            h << m_indentation << "include "<< cppToRubyType(concept->getName()) << m_endl;
++            h << m_indentation << "include "<< cppToRubyType(umlConcept->getName()) << m_endl;
+--- umbrello/umbrello/codegenerators/simplecodegenerator.cpp
++++ umbrello/umbrello/codegenerators/simplecodegenerator.cpp
+@@ -77,10 +77,10 @@
+-TQString SimpleCodeGenerator::findFileName(UMLPackage* concept, const TQString &ext) {
++TQString SimpleCodeGenerator::findFileName(UMLPackage* umlConcept, const TQString &ext) {
+ 
+     //if we already know to which file this class was written/should be written, just return it.
+-    if (m_fileMap.contains(concept))
+-        return m_fileMap[concept];
++    if (m_fileMap.contains(umlConcept))
++        return m_fileMap[umlConcept];
+ 
+     //else, determine the "natural" file name
+     TQString name;
+     // Get the package name
+-    TQString package = concept->getPackage(".");
++    TQString package = umlConcept->getPackage(".");
+@@ -99,6 +99,6 @@
+-        name = package + '.' + concept->getName();
++        name = package + '.' + umlConcept->getName();
+         name.replace(TQRegExp("\\\\."),"/");
+         package.replace(TQRegExp("\\\\."), "/");
+         package = '/' + package;
+     } else {
+-        name = concept->getFullyQualifiedName("-");
++        name = umlConcept->getFullyQualifiedName("-");
+@@ -144,10 +144,10 @@
+-    return overwritableName(concept, name, extension);
++    return overwritableName(umlConcept, name, extension);
+ }
+ 
+-TQString SimpleCodeGenerator::overwritableName(UMLPackage* concept, const TQString &name, const TQString &ext) {
++TQString SimpleCodeGenerator::overwritableName(UMLPackage* umlConcept, const TQString &name, const TQString &ext) {
+     //check if a file named "name" with extension "ext" already exists
+     CodeGenerationPolicy *commonPolicy = UMLApp::app()->getCommonPolicy();
+     TQDir outputDir = commonPolicy->getOutputDirectory();
+     TQString filename = name + ext;
+     if(!outputDir.exists(filename)) {
+-        m_fileMap.insert(concept,filename);
++        m_fileMap.insert(umlConcept,filename);
+@@ -211,1 +211,1 @@
+-    m_fileMap.insert(concept, filename);
++    m_fileMap.insert(umlConcept, filename);
+--- umbrello/umbrello/codegenerators/simplecodegenerator.h
++++ umbrello/umbrello/codegenerators/simplecodegenerator.h
+@@ -76,2 +76,2 @@
+-    TQString findFileName(UMLPackage* concept, const TQString &ext);
+-    TQString overwritableName(UMLPackage* concept, const TQString &name, const TQString &ext);
++    TQString findFileName(UMLPackage* umlConcept, const TQString &ext);
++    TQString overwritableName(UMLPackage* umlConcept, const TQString &name, const TQString &ext);
+--- umbrello/umbrello/dialogs/codegenerationwizard.cpp
++++ umbrello/umbrello/dialogs/codegenerationwizard.cpp
+@@ -116,2 +116,2 @@
+-            UMLClassifier *concept =  m_doc->findUMLClassifier(item->text(0));
+-            cList.append(concept);
++            UMLClassifier *umlConcept =  m_doc->findUMLClassifier(item->text(0));
++            cList.append(umlConcept);
+@@ -127,2 +127,2 @@
+-void CodeGenerationWizard::classGenerated(UMLClassifier* concept, bool generated) {
+-    TQListViewItem* item = m_statusList->findItem( concept->getFullyQualifiedName(), 0 );
++void CodeGenerationWizard::classGenerated(UMLClassifier* umlConcept, bool generated) {
++    TQListViewItem* item = m_statusList->findItem( umlConcept->getFullyQualifiedName(), 0 );
+--- umbrello/umbrello/dialogs/codegenerationwizard.h
++++ umbrello/umbrello/dialogs/codegenerationwizard.h
+@@ -67,1 +67,1 @@
+-    void classGenerated(UMLClassifier* concept, bool generated);
++    void classGenerated(UMLClassifier* umlConcept, bool generated);
+EOF
+}
+
 listdocs_fn
 
 chown_fn

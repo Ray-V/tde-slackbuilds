@@ -35,6 +35,28 @@ getsource_fn
 
 untar_fn
 
+## patch for building with gcc-16 [c++20 default] - issue #735
+[[ $TDEVERSION == 14.1.6 ]] && {
+patch -p0 << EOF
+--- kcontrol/joystick/joydevice.h
++++ kcontrol/joystick/joydevice.h
+@@ -27,3 +27,1 @@
+-#undef __STRICT_ANSI__
+ #include <linux/joystick.h>
+-#define __STRICT_ANSI__
+--- libkonq/konq_sort_constants.h
++++ libkonq/konq_sort_constants.h
+@@ -7,5 +7,5 @@
+-enum {
++enum TextSortOrders {
+   UNICODE_UNMODIFIED      = 0,
+   LOCALE_UNMODIFIED       = 1,
+   UNICODE_CASEINSENSITIVE = 2,
+-} TextSortOrders;
++};
+EOF
+}
+
 ## make default tdm screen text clearer against dark background and align login button with clickable area
 ## edit color="#ffff74" and/or color="#ff0000" for your own choice
 echo $'
@@ -106,17 +128,17 @@ sed -i "s|trinity|$PLUGIN_INSTALL_DIR|" tdeioslave/trash/testtrash.cpp || true
 patch -N -p0 << EOF || true
 --- translations/desktop_files/kcontrol-desktops/en_GB.po
 +++ translations/desktop_files/kcontrol-desktops/en_GB.po
-@@ -1355,3 +1355,3 @@
+@@ -1792,3 +1792,3 @@
  msgid "Configure display ICC color profile"
 -msgstr ""
 +msgstr "Configure display ICC colour profile"
  
-@@ -1360,3 +1360,3 @@
+@@ -1797,3 +1797,3 @@
  msgid "ICC;display;color;profile;"
 -msgstr ""
 +msgstr "ICC;display;colour;profile;"
  
-@@ -1365,3 +1365,3 @@
+@@ -1802,3 +1802,3 @@
  msgid "Color Profile"
 -msgstr ""
 +msgstr "Colour Profile"

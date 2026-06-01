@@ -34,6 +34,119 @@ getsource_fn
 
 untar_fn
 
+## patch for building with gcc-16 [c++20 default] - pulls/110
+[[ $TDEVERSION == 14.1.6 ]] && {
+patch -p0 << EOF
+--- amarok/src/collectiondb.cpp
++++ amarok/src/collectiondb.cpp
+@@ -4536,16 +4536,16 @@
+-        if ( values[ 1 ] != bundle.artist() )
++        if ( values[ 1 ] != bundle.artist().string() )
+         {
+             art = true;
+             command += "artist = " + IDFromExactValue( "artist", bundle.artist() ) + ", ";
+         }
+-        if ( values[ 2 ] != bundle.composer() )
++        if ( values[ 2 ] != bundle.composer().string() )
+         {
+             comp = true;
+             command += "composer = " + IDFromExactValue( "composer", bundle.composer() ) + ", ";
+         }
+-        if ( values[ 3 ] != bundle.album() )
++        if ( values[ 3 ] != bundle.album().string() )
+         {
+             alb = true;
+             command += "album = "  + IDFromExactValue( "album", bundle.album() ) + ", ";
+         }
+-        if ( values[ 4 ] != bundle.genre() )
++        if ( values[ 4 ] != bundle.genre().string() )
+@@ -4563,1 +4563,1 @@
+-        if ( values[ 7 ] != bundle.comment() )
++        if ( values[ 7 ] != bundle.comment().string() )
+--- amarok/src/contextbrowser.cpp
++++ amarok/src/contextbrowser.cpp
+@@ -3080,1 +3080,1 @@
+-        if( artist == m_currentTrack.artist() )
++        if( artist == m_currentTrack.artist().string() )
+@@ -4367,1 +4367,1 @@
+-    if( !m_shownAlbums.contains( bundle.album() ) && m_artist != bundle.artist() )
++    if( !m_shownAlbums.contains( bundle.album().string() ) && m_artist != bundle.artist().string() )
+@@ -4388,1 +4388,1 @@
+-        if( oldArtist != currentTrack.artist() && oldAlbum != currentTrack.album() )
++        if( oldArtist != currentTrack.artist().string() && oldAlbum != currentTrack.album().string() )
+--- amarok/src/cuefile.cpp
++++ amarok/src/cuefile.cpp
+@@ -236,2 +236,2 @@
+-                   || it.data().getArtist() != bundle.artist()
+-                   || it.data().getAlbum() != bundle.album()
++                   || it.data().getArtist() != bundle.artist().string()
++                   || it.data().getAlbum() != bundle.album().string()
+--- amarok/src/mediabrowser.cpp
++++ amarok/src/mediabrowser.cpp
+@@ -2800,1 +2800,1 @@
+-                            && !bundle->artist().isEmpty() && bundle->artist() != i18n( "Unknown" )
++                            && !bundle->artist().isEmpty() && bundle->artist().string() != i18n( "Unknown" )
+--- amarok/src/mediadevice/mtp/mtpmediadevice.cpp
++++ amarok/src/mediadevice/mtp/mtpmediadevice.cpp
+@@ -482,1 +482,1 @@
+-        if( it.data()->album() == items->first()->bundle()->album() )
++        if( it.data()->album() == items->first()->bundle()->album().string() )
+--- amarok/src/osd.cpp
++++ amarok/src/osd.cpp
+@@ -891,2 +891,2 @@
+-    if( AmarokConfig::osdCover() && artist == EngineController::instance()->bundle().artist()
+-                                 && album  == EngineController::instance()->bundle().album()  )
++    if( AmarokConfig::osdCover() && artist == EngineController::instance()->bundle().artist().string()
++                                 && album  == EngineController::instance()->bundle().album().string()  )
+--- amarok/src/playlistwindow.cpp
++++ amarok/src/playlistwindow.cpp
+@@ -849,3 +849,3 @@
+-            if( artist != item->artist() )
++            if( artist != item->artist().string() )
+                 useArtist = false;
+-            if( album  != item->album() )
++            if( album  != item->album().string() )
+--- amarok/src/tagdialog.cpp
++++ amarok/src/tagdialog.cpp
+@@ -239,1 +239,1 @@
+-    if ( m_bundle.artist() != artist ||  m_bundle.album()!=album )
++    if ( m_bundle.artist().string() != artist ||  m_bundle.album().string()!=album )
+@@ -1255,22 +1255,22 @@
+-        if( !kComboBox_artist->currentText().isEmpty() && kComboBox_artist->currentText() != mb.artist() ||
++        if( !kComboBox_artist->currentText().isEmpty() && kComboBox_artist->currentText() != mb.artist().string() ||
+                 kComboBox_artist->currentText().isEmpty() && !m_bundle.artist().isEmpty() ) {
+             mb.setArtist( kComboBox_artist->currentText() );
+             changed |= TagDialog::TAGSCHANGED;
+         }
+ 
+-        if( !kComboBox_album->currentText().isEmpty() && kComboBox_album->currentText() != mb.album() ||
++        if( !kComboBox_album->currentText().isEmpty() && kComboBox_album->currentText() != mb.album().string() ||
+                 kComboBox_album->currentText().isEmpty() && !m_bundle.album().isEmpty() ) {
+             mb.setAlbum( kComboBox_album->currentText() );
+             changed |= TagDialog::TAGSCHANGED;
+         }
+-        if( !kComboBox_genre->currentText().isEmpty() && kComboBox_genre->currentText() != mb.genre() ||
++        if( !kComboBox_genre->currentText().isEmpty() && kComboBox_genre->currentText() != mb.genre().string() ||
+                 kComboBox_genre->currentText().isEmpty() && !m_bundle.genre().isEmpty() ) {
+             mb.setGenre( kComboBox_genre->currentText() );
+             changed |= TagDialog::TAGSCHANGED;
+         }
+-        if( !kTextEdit_comment->text().isEmpty() && kTextEdit_comment->text() != mb.comment() ||
++        if( !kTextEdit_comment->text().isEmpty() && kTextEdit_comment->text() != mb.comment().string() ||
+                 kTextEdit_comment->text().isEmpty() && !m_bundle.comment().isEmpty() ) {
+             mb.setComment( kTextEdit_comment->text() );
+             changed |= TagDialog::TAGSCHANGED;
+         }
+-        if( !kComboBox_composer->currentText().isEmpty() && kComboBox_composer->currentText() != mb.composer() ||
++        if( !kComboBox_composer->currentText().isEmpty() && kComboBox_composer->currentText() != mb.composer().string() ||
+--- amarok/src/tracktooltip.cpp
++++ amarok/src/tracktooltip.cpp
+@@ -280,1 +280,1 @@
+-    if( artist == m_tags.artist() && album == m_tags.album() )
++    if( artist == m_tags.artist().string() && album == m_tags.album().string() )
+EOF
+}
+
 ## speex patches to cmake:
 ## [1] new speex/CMakeLists.txt using aac/CMakeLists.txt as a template
 cat amarok/src/metadata/aac/CMakeLists.txt | \

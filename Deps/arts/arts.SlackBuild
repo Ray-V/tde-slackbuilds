@@ -33,6 +33,27 @@ getsource_fn
 
 untar_fn
 
+## patch for building with gcc-16 [c++20 default] - pulls/38
+[[ $TDEVERSION == 14.1.6 ]] && {
+patch -p0 << EOF
+--- mcop/objectmanager.cpp
++++ mcop/objectmanager.cpp
+@@ -76,9 +76,9 @@ Object_skel *ObjectManager::create(const string& name)
+-		vector<string> *requires = oi->getProperty("Requires");
++		vector<string> *requireList = oi->getProperty("Requires");
+ 
+ 		vector<string>::iterator ri;
+-		for(ri = requires->begin(); ri != requires->end(); ri++)
++		for(ri = requireList->begin(); ri != requireList->end(); ri++)
+ 		{
+ 			if(d->capabilities[*ri] <= 0)
+ 				requirementsOk = false;
+ 		}
+-		delete requires;
++		delete requireList;
+EOF
+}
+
 listdocs_fn
 
 chown_fn

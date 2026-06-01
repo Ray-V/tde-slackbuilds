@@ -33,6 +33,31 @@ getsource_fn
 
 untar_fn
 
+## patch for building with gcc-16 [c++20 default] - pulls/111
+[[ $TDEVERSION == 14.1.6 ]] && {
+patch -p0 << EOF
+--- mpeglib/lib/input/cdromAccess_Linux.cpp
++++ mpeglib/lib/input/cdromAccess_Linux.cpp
+@@ -13,9 +13,2 @@
+-#ifdef __STRICT_ANSI__
+-#undef __STRICT_ANSI__
+-#define _ANSI_WAS_HERE_
+-#endif
+ #include <linux/types.h>
+ #include <linux/cdrom.h>
+-#ifdef _ANSI_WAS_HERE_
+-#define __STRICT_ANSI__ 
+-#endif
+--- mpeglib/lib/input/httpInputStream.h
++++ mpeglib/lib/input/httpInputStream.h
+@@ -20,4 +20,0 @@
+-#ifndef __STRICT_ANSI__
+-#define __STRICT_ANSI__
+-#endif
+-
+EOF
+}
+
 listdocs_fn
 
 chown_fn
