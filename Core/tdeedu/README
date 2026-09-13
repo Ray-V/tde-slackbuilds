@@ -1,2 +1,12 @@
 The page/paper size can be set with the command line option PS= or will default to the size set for the system locale.
- 
+
+----------------------
+
+Kalzium equation solver
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+https://mirror.git.trinitydesktop.org/gitea/TDE/tdeedu/issues/8
+has been resolved by the use of ocaml-5.6.0 with compatible builds of facile-1.1.4 and zarith-1.14
+
+Building an ocaml package:
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+See Core/tdeedu/ocaml-build.md for details.

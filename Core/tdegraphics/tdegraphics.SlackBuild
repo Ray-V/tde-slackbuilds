@@ -33,6 +33,26 @@ getsource_fn
 
 untar_fn
 
+#Fix build with Poppler 26.06 and later
+pkg-config --atleast-version=26.06 poppler && {
+[[ $TDEVERSION == 14.1.6 ]] && {
+patch -p0 << EOF
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
+@@ -146,1 +146,5 @@
++#if (POPPLER_VERSION_C >= 26006000)
++    rect = &p->getCropBox();
++#else
+     rect = p->getCropBox();
++#endif
+--- tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
++++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
+@@ -32,0 +32,1 @@
++#include <CharTypes.h>
+EOF
+}
+}
+
 ## build fails with gcc visibility support
 sed -i 's|tde_setup_gcc_visibility|#&|' ConfigureChecks.cmake
 
@@ -42,26 +62,26 @@ echo -e "\033[39;1m"
 patch -p0 << EOF
 --- ksnapshot/ksnapshot.cpp
 +++ ksnapshot/ksnapshot.cpp
-@@ -84 +83,0 @@
+@@ -112 +111,0 @@
 -    connect(mainWidget, TQ_SIGNAL(openWithKPClicked()), TQ_SLOT(slotOpenWithKP()));
-@@ -135,6 +133,0 @@
+@@ -165,6 +163,0 @@
 -    // Check for KolourPaint availability
 -    KService::Ptr kpaint = KService::serviceByDesktopName("kolourpaint");
 -    if (!kpaint) {
 -        mainWidget->btnOpenWithKP->hide();
 -    }
 -
-@@ -395,7 +388,0 @@
+@@ -419,7 +411,0 @@
+-}
+-
 -void KSnapshot::slotOpenWithKP() {
 -    KService::Ptr kpaint = KService::serviceByDesktopName("kolourpaint");
 -    if (kpaint) {
 -        openWithExternalApp(*kpaint);
 -    }
--}
--
 --- ksnapshot/ksnapshot.h
 +++ ksnapshot/ksnapshot.h
-@@ -114 +113,0 @@
+@@ -116 +115,0 @@
 -  void slotOpenWithKP();
 --- ksnapshot/ksnapshotwidget.ui
 +++ ksnapshot/ksnapshotwidget.ui

@@ -5,7 +5,7 @@ If it's not installed and the source isn't available, running the SlackBuild wil
 -----------
 
 The minimum version of rust for clamav-1.5.x depends on the modules built.
-For version 1.5.1, minimum rust versions range up to 1.85.0
+For version 1.5.4, minimum rust versions range up to 1.87.0
 
-As set up here, the build was successful with rust-1.85.0
+As set up here, the build was successful with rust-1.87.0
  

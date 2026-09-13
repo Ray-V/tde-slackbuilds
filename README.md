@@ -35,7 +35,9 @@ URLs for this and other locations are @ https://www.trinitydesktop.org/mirrorsta
 * build_regextester=[yp] - build the regex tester from the tqt example - see the tqt README
 * mailmerge=n - build kword without mailmerge - see the koffice README and SlackBuild
 * KP_BTN=n - build ksnapshot without the dedicated KolourPaint button - see the tdegraphics README and SlackBuild
-* W_SUDO=ON - set backends for using sudo as the super user command [default is su]
+* W_SUDO=ON - set backends for tdelibs/tdebase builds using sudo as the super user command [default is su]
+* EQ_SOLVER=ON - build the kalzium equation solver.  
+   Requires ocaml - see [tdeedu/ocaml-build.md](Core/tdeedu/ocaml-build.md) for a compatible build.
 ---
 
 ***The directory structure*** for the SlackBuild scripts is in line with the Trinity release source repositories:  
@@ -60,7 +62,7 @@ get-source.sh - common code for the SlackBuilds
 There is an override in the Misc SlackBuilds for non-trinity source archive URLs. Non-trinity builds have been included where a TDE package requires a dependency that is not in Slackware, or where it's an alternative to a TDE package.
 
 Some SlackBuilds require non-Slackware packages which aren't in the build list. These can be added to the build if they are not already installed by downloading the source archives to the 'src' directory. They will then be built and installed during the xxx.SlackBuild.   
-See the READMEs in Apps/k3b, Apps/klamav, and Misc/inkscape for details, which can also be viewed while running ./BUILD-TDE.sh.
+See the READMEs in [Apps/k3b](Apps/k3b/README), [Apps/klamav](Apps/klamav/README), and [Misc/inkscape](Misc/inkscape/README) for details, which can also be viewed while running ./BUILD-TDE.sh.
 
 ---
 
