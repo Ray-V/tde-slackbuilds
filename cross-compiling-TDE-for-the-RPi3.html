@@ -133,7 +133,7 @@ Builds have been done for the RPi3 running systems based on Slackware-arm-curren
 <br>
 The packages listed on this page have been built on an x86_64 machine and installed and tested OK on an RPi3.
 <br>
-[Edit: builds for R14.1.6 have been verified for 64-bit arm only].
+[Edit: builds for R14.1.7 have been verified for 64-bit arm only].
 <br>
 For any problems, questions, etc please open an issue at <a class="extlink" href="https://github.com/Ray-V/tde-slackbuilds">tde-slackbuilds</a>.
 <p>
@@ -159,7 +159,7 @@ The build order is:
 <br>4] set up the build environment with tqmoc and meinproc x86 binaries
 <br>5] the <span style="background: #E5F1FF;">required</span> TDE packages and install them to / and sysroot
 <br>6] other packages
-<br> <span class="green">Options</span> include packaging, 64-bit kernel and its components, imlib, &hellip;
+<br> <span class="green">Options</span> include packaging, 64-bit kernel and its components, imlib2, &hellip;
 <p>
 <span class="thtwo">To aid trouble shooting, this page has been set up so that each build can be run by selecting the contents in part or whole and pasting into a console.</span>
 <p>
@@ -590,7 +590,7 @@ To keep track of where stuff is installed use the package management system - de
 installpkg /tmp/xgcc910-glibc2.29-${K_VER}_RPi_headers-en_GB-$ARM.txz
 </code>
 <span class="dastx">##</span> Set the variables for the TDE packages builds
-<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.6</b>
+<code class="thtwo">export <b>TDE_VERSION</b>=<b>14.1.7</b>
 export INSTALL_TDE=<b>/opt/tde</b>
 export SYS_CNF_DIR=<b>/etc/tde</b>
 [[ $ARM == aarch64 ]] &amp;&amp; export LIBDIRSUFFIX=64
@@ -1689,7 +1689,8 @@ sed -i "s|meinproc|$INSTALL_TDE/bin/meinproc-x86|" ../CMakeLists.txt
 </code>
 <span class="dastx">##</span> Add exitcodes for try_run tests which produce a cmake error when x-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set
 <span class="dastx">##</span> Set exitcodes to values that a native build would give
-<span class="dastx">##</span> Additionally, command line '-D HAVE_xxxxx_EXITCODE:STRING=x' option fails with cmake 3.12, so these builds use cmake 3.10
+<span class="dastx">##</span> Cmake 3.18 is used to avoid errors: 'add_library cannot create ALIAS target "xxx-lib" because target "xxx-shared" is IMPORTED'
+<span class="dastx">##</span> which then requires the addition of command line entries '-D HAVE_xxxx_EXITCODE__TRYRUN_OUTPUT:STRING=x'
 <span class="dastx">##</span> Use native binary intltool-merge for ARCH independent desktop files
 <code class="thtwo"><span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
 cmake-toolchain_fn
@@ -1698,7 +1699,9 @@ cmake \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
     -D HAVE_GOOD_GETADDRINFO_EXITCODE:STRING=0 \
+    -D HAVE_GOOD_GETADDRINFO_EXITCODE__TRYRUN_OUTPUT:STRING=0 \
     -D HAVE_OPENPTY_EXITCODE:STRING=0 \
+    -D HAVE_OPENPTY_EXITCODE__TRYRUN_OUTPUT:STRING=0 \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_C_COMPILER=$COMPILER \
@@ -1909,11 +1912,15 @@ cmake-toolchain_fn
 cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
     -D HAVE_OPENPTY_EXITCODE:STRING=0 \
+    -D HAVE_OPENPTY_EXITCODE__TRYRUN_OUTPUT:STRING=0 \
     -D HAVE_NOGROUP_EXITCODE:STRING=0 \
+    -D HAVE_NOGROUP_EXITCODE__TRYRUN_OUTPUT:STRING=0 \
     -D HAVE_SETLOGIN_EXITCODE:STRING=1 \
+    -D HAVE_SETLOGIN_EXITCODE__TRYRUN_OUTPUT:STRING=1 \
     -D HONORS_SOCKET_PERMS_EXITCODE:STRING=0 \
+    -D HONORS_SOCKET_PERMS_EXITCODE__TRYRUN_OUTPUT:STRING=0 \
     -D COVARIANT_RETURN_EXITCODE:STRING=0 \
-    -D HTDIG_SEARCH_BINARY=$SYSROOT/var/www/cgi-bin/htsearch \
+    -D COVARIANT_RETURN_EXITCODE__TRYRUN_OUTPUT:STRING=0 \
     -D MOC_EXECUTABLE=$SYSROOT/x86/tqmoc \
     -D KDE3_MEINPROC_EXECUTABLE:INTERNAL=$INSTALL_TDE/bin/meinproc-x86 \
     -D INTLTOOL_MERGE_EXECUTABLE=$(which intltool-merge) \
@@ -2021,9 +2028,6 @@ make $NUMJOBS
 }
 
 make DESTDIR=$PKG install
-
-<span class="dastx">##</span> remove sysroot path from package
-sed -i "s|$SYSROOT||" $PKG$INSTALL_TDE/bin/khc_htsearch.pl
 
 mangzip_fn
 
@@ -2344,15 +2348,6 @@ EOF
 
 chown_fn
 
-<span class="dastx">##</span> check for libatlantic [tdegames]
-[[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libatlantic.so.*) ]] &amp;&amp; ATLANTIKDESIGNER="ON"
-
-<span class="dastx">##</span> check for kaddressbook in tdepim
-[[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libkaddressbook.so*) ]] &amp;&amp; KADDRESSBOOK_PLUGINS="ON"
-
-<span class="dastx">##</span> check for tdemultimedia
-[[ $(ls $SYSROOT$INSTALL_TDE/lib$LIBDIRSUFFIX/libnoatun.so*) ]] &amp;&amp; NOATUN_PLUGINS="ON"
-
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
@@ -2378,9 +2373,9 @@ cmake \
     -DWITH_XMMS="OFF" \
     -DWITH_GCC_VISIBILITY="ON" \
     -DBUILD_DOC="ON" \
-    -DBUILD_ATLANTIKDESIGNER=${ATLANTIKDESIGNER:-"OFF"} \
-    -DBUILD_KADDRESSBOOK_PLUGINS=${KADDRESSBOOK_PLUGINS:-"OFF"} \
-    -DBUILD_NOATUN_PLUGINS=${NOATUN_PLUGINS:-"OFF"} \
+    -DBUILD_ATLANTIKDESIGNER="OFF" \
+    -DBUILD_KADDRESSBOOK_PLUGINS="OFF" \
+    -DBUILD_NOATUN_PLUGINS="OFF" \
     -DBUILD_KATE_PLUGINS="ON" \
     -DBUILD_KICKER_APPLETS="ON" \
     -DBUILD_KNEWSTICKER_SCRIPTS="ON" \
@@ -2608,15 +2603,15 @@ makepkg_fn
 
 
 <p>
-<!-- imlib - start -->
-<a name="close_imlib"></a>
+<!-- imlib2 - start -->
+<a name="close_imlib2"></a>
 <br>
-<span class="tabs opt"><a href="#imlib">&hellip; imlib</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Required for kuickshow - part of tdegraphics.
+<span class="tabs opt"><a href="#imlib2">&hellip; imlib2</a></span><span style="vertical-align:-30%">&nbsp;&nbsp;Required for kuickshow - part of tdegraphics.
 </a></span>
-<div id="imlib" class="tab"><div class="b_prefs"><span class="tabs"><a href="#close_imlib">close</a></span>
+<div id="imlib2" class="tab"><div class="b_prefs"><span class="tabs"><a href="#close_imlib2">close</a></span>
 <code><code class="thtwo">cd /
-PRGNAM=imlib
-VERSION=1.9.15
+PRGNAM=imlib2
+VERSION=1.12.7
 BUILD=$BUILD
 TMP=/tmp/build
 rm -rf $TMP
@@ -2626,471 +2621,19 @@ mkdir -p $PKG
 mkdir $TMP/tmp-$PRGNAM
 
 untar_fn
-</code>
-Patches thanks to fedora
-<code class="thtwo">echo $'--- Imlib/load.c
-+++ Imlib/load.c
-@@ -6,0 +7,2 @@
-+#define G_MAXINT ((int) 0x7fffffff)
-+
-@@ -43,0 +46,2 @@
-+ *     we check G_MAXINT/4 because rend.c malloc\'s w * h * bpp
-+ *     + 3 is safety margin
-@@ -48,3 +52,5 @@
--       if( w > 32767 || h > 32767)
--               return NULL;
--       return malloc(w * h * 3);
-+       if (w &lt;= 0 || w > 32767 ||
-+           h &lt;= 0 || h > 32767 ||
-+           h >= (G_MAXINT/4 - 1) / w)
-+                return NULL;
-+       return malloc(w * h * 3 + 3);
-@@ -194 +200 @@
--  if (setjmp(png_ptr->jmpbuf))
-+  if (setjmp(png_jmpbuf(png_ptr)))
-@@ -199 +205 @@
--  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-+  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
-@@ -257 +263,2 @@
--  if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-+  if (color_type == PNG_COLOR_TYPE_GRAY
-+      || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-@@ -281,0 +289 @@
-+#if 0
-@@ -296,0 +305 @@
-+#endif
-@@ -363 +372,3 @@
--  if(ww > 32767 || hh > 32767)
-+  if (ww &lt;= 0 || ww > 32767 ||
-+      hh &lt;= 0 || hh > 32767 ||
-+      hh >= (G_MAXINT/sizeof(uint32)) / ww)
-@@ -445,0 +457,3 @@
-+#ifdef GIFLIB_MAJOR
-+  gif = DGifOpenFileHandle(fd, NULL);
-+#else
-@@ -446,0 +461 @@
-+#endif
-@@ -453,0 +469,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>  fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
-+#else
-@@ -454,0 +473 @@
-+#endif
-@@ -460,0 +480,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>      fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
-+#else
-@@ -461,0 +484 @@
-+#endif
-@@ -466 +489 @@
--<span class="bkslt">\t</span>  if (*h > 32767 || *w > 32767)
-+<span class="bkslt">\t</span>  if (*h &lt;= 0 || *h > 32767 || *w &lt;= 0 || *w > 32767)
-@@ -472,0 +496,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>      DGifCloseFile(gif, NULL);
-+#else
-@@ -473,0 +500 @@
-+#endif
-@@ -478,0 +506,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>      DGifCloseFile(gif, NULL);
-+#else
-@@ -479,0 +510 @@
-+#endif
-@@ -489,0 +521,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  DGifCloseFile(gif, NULL);
-+#else
-@@ -490,0 +525 @@
-+#endif
-@@ -578,0 +614,3 @@
-+#ifdef GIFLIB_MAJOR
-+  DGifCloseFile(gif, NULL);
-+#else
-@@ -579,0 +618 @@
-+#endif
-@@ -648 +687 @@
--  if (bpp != 1 &amp;&amp; bpp != 4 &amp;&amp; bpp != 8 &amp;&amp; bpp &amp;&amp; 16 &amp;&amp; bpp != 24 &amp;&amp; bpp != 32)
-+  if (bpp != 1 &amp;&amp; bpp != 4 &amp;&amp; bpp != 8 &amp;&amp; bpp != 16 &amp;&amp; bpp != 24 &amp;&amp; bpp != 32)
-@@ -1002,0 +1042,2 @@
-+  memset(lookup, 0, sizeof(lookup));
-+
-@@ -1003,0 +1045,3 @@
-+  if (!line)
-+    return NULL;
-+
-@@ -1032 +1076 @@
--                  if (ncolors > 32766)
-+                  if (ncolors &lt;= 0 || ncolors > 32766)
-@@ -1038 +1082 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (cpp > 5)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (cpp &lt;= 0 || cpp > 5)
-@@ -1044 +1088 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*w > 32767)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*w &lt;= 0 || *w > 32767)
-@@ -1050 +1094 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*h > 32767)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*h &lt;= 0 || *h > 32767)
-@@ -1082,0 +1127 @@
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>      int                 space;
-@@ -1087,0 +1133 @@
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>      space = sizeof(col) - 1;
-@@ -1110,4 +1156,4 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (col[0])
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, " ");
--                                      if (strlen(col) + strlen(s) < sizeof(col))
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, s);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (col[0] &amp;&amp; space > 0)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, " "), space -= 1;
-+                                      if (slen &lt;= space)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, s), space -= slen;
-@@ -1143 +1189,2 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  strcpy(tok, s);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (slen < sizeof(tok));
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcpy(tok, s);
-@@ -1144,0 +1192 @@
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  space = sizeof(col) - 1;
-@@ -1148,3 +1196,4 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (col[0])
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcat(col, " ");
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  strcat(col, s);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (col[0] &amp;&amp; space > 0)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcat(col, " "), space -=1;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (slen &lt;= space)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcat(col, s), space -= slen;
-@@ -1379 +1428 @@
--<span class="bkslt">\t</span>  if (a > 32767)
-+<span class="bkslt">\t</span>  if (a &lt;= 0 || a > 32767)
-@@ -1384 +1433 @@
--<span class="bkslt">\t</span>  if (b > 32767)
-+<span class="bkslt">\t</span>  if (b &lt;= 0 || b > 32767)
---- Imlib/misc.c
-+++ Imlib/misc.c
-@@ -677,0 +678,4 @@
-+
-+  id->x.shm = 0;
-+  id->x.shmp = 0;
-+  id->max_shm = 0;
-@@ -693 +697,2 @@
--<span class="bkslt">\t</span>      if (XShmPixmapFormat(id->x.disp) == ZPixmap)
-+<span class="bkslt">\t</span>      if ((XShmPixmapFormat(id->x.disp) == ZPixmap &amp;&amp;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>   (pm == True)))
-@@ -698 +702,0 @@
--  else
-@@ -700,4 +704 @@
--    {
--      id->x.shm = 0;
--      id->x.shmp = 0;
--    }
-+
-@@ -955,2 +956,2 @@
--<span class="bkslt">\t</span>  if (id->x.shm)
--<span class="bkslt">\t</span>    id->x.shmp = p->sharedpixmaps;
-+<span class="bkslt">\t</span>  if (!p->sharedpixmaps)
-+<span class="bkslt">\t</span>    id->x.shmp = 0;
---- Imlib/save.c
-+++ Imlib/save.c
-@@ -345 +345 @@
--<span class="bkslt">\t</span>  if (setjmp(png_ptr->jmpbuf))
-+<span class="bkslt">\t</span>  if (setjmp(png_jmpbuf(png_ptr)))
---- Imlib/utils.c
-+++ Imlib/utils.c
-@@ -1498,0 +1499 @@
-+  memset(lookup, 0, sizeof(lookup));
-@@ -1502,0 +1504,15 @@
-+      if (!line)
-+<span class="bkslt">\t</span>break;
-+      line = strdup(line);
-+      if (!line)
-+<span class="bkslt">\t</span>break;
-+      len = strlen(line);
-+      for (i = 0; i < len; ++i)
-+<span class="bkslt">\t</span>{
-+<span class="bkslt">\t</span>  c = line[i];
-+<span class="bkslt">\t</span>  if (c < 32)
-+<span class="bkslt">\t</span>    line[i] = 32;
-+<span class="bkslt">\t</span>  else if (c > 127)
-+<span class="bkslt">\t</span>    line[i] = 127;
-+<span class="bkslt">\t</span>}
-+
-@@ -1507 +1523 @@
--<span class="bkslt">\t</span>  if (ncolors > 32766)
-+<span class="bkslt">\t</span>  if (ncolors &lt;= 0 || ncolors > 32766)
-@@ -1510,0 +1527 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1513 +1530 @@
--<span class="bkslt">\t</span>  if (cpp > 5)
-+<span class="bkslt">\t</span>  if (cpp &lt;= 0 || cpp > 5)
-@@ -1516,0 +1534 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1519 +1537 @@
--<span class="bkslt">\t</span>  if (w > 32767)
-+<span class="bkslt">\t</span>  if (w &lt;= 0 || w > 32767)
-@@ -1522,0 +1541 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1525 +1544 @@
--<span class="bkslt">\t</span>  if (h > 32767)
-+<span class="bkslt">\t</span>  if (h &lt;= 0 || h > 32767)
-@@ -1528,0 +1548 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1535,0 +1556 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1544,0 +1566 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1819,0 +1842 @@
-+      free(line);
-@@ -1961,2 +1984 @@
--  
--  if (setjmp(png_ptr->jmpbuf))
-+  if (setjmp(png_jmpbuf(png_ptr)))  
-@@ -1968 +1990 @@
--  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-+  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
---- configure
-+++ configure
-@@ -22914,2 +22913,0 @@
--CPPFLAGS="$CPPFLAGS -I$includedir -I$prefix/include"
--
---- configure.in
-+++ configure.in
-@@ -144,2 +143,0 @@
--CPPFLAGS="$CPPFLAGS -I$includedir -I$prefix/include"
--
---- gdk_imlib/io-gif.c
-+++ gdk_imlib/io-gif.c
-@@ -32,0 +33,3 @@
-+#ifdef GIFLIB_MAJOR
-+  gif = DGifOpenFileHandle(fd, NULL);
-+#else
-@@ -33,0 +37 @@
-+#endif
-@@ -45,0 +50,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>  fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
-+#else
-@@ -46,0 +54 @@
-+#endif
-@@ -52,0 +61,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>      fprintf(stderr, "giflib error: %s\\n", GifErrorString(gif->Error));
-+#else
-@@ -53,0 +65 @@
-+#endif
-@@ -58 +70 @@
--<span class="bkslt">\t</span>  if(*h > 32767 || *w > 32767)
-+<span class="bkslt">\t</span>  if(*h &lt;= 0 || *h > 32767 || *w &lt;= 0 || *w > 32767)
-@@ -64,0 +77,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>      DGifCloseFile(gif, NULL);
-+#else
-@@ -65,0 +81 @@
-+#endif
-@@ -70,0 +87,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span>      DGifCloseFile(gif, NULL);
-+#else
-@@ -71,0 +91 @@
-+#endif
-@@ -81,0 +102,3 @@
-+#ifdef GIFLIB_MAJOR
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  DGifCloseFile(gif, NULL);
-+#else
-@@ -82,0 +106 @@
-+#endif
-@@ -170,0 +195,3 @@
-+#ifdef GIFLIB_MAJOR
-+  DGifCloseFile(gif, NULL);
-+#else
-@@ -171,0 +199 @@
-+#endif
---- gdk_imlib/io-png.c
-+++ gdk_imlib/io-png.c
-@@ -43 +43 @@
--  if (setjmp(png_ptr->jmpbuf))
-+  if (setjmp(png_jmpbuf(png_ptr)))
-@@ -49 +49 @@
--  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-+  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
-@@ -278 +278 @@
--  if (setjmp(png_ptr->jmpbuf))
-+  if (setjmp(png_jmpbuf(png_ptr)))
-@@ -284 +284 @@
--  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-+  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
-@@ -303,0 +304,3 @@
-+  if (color_type == PNG_COLOR_TYPE_GRAY &amp;&amp; bit_depth < 8)
-+    png_set_expand(png_ptr);
-+
-@@ -443 +446 @@
--<span class="bkslt">\t</span>if (setjmp(png_ptr->jmpbuf))
-+<span class="bkslt">\t</span>if (setjmp(png_jmpbuf(png_ptr)))
-@@ -449 +452 @@
--<span class="bkslt">\t</span>if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-+<span class="bkslt">\t</span>if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB_ALPHA)
-@@ -638 +641 @@
--<span class="bkslt">\t</span>  if (setjmp(png_ptr->jmpbuf))
-+<span class="bkslt">\t</span>  if (setjmp(png_jmpbuf(png_ptr)))
---- gdk_imlib/io-ppm.c
-+++ gdk_imlib/io-ppm.c
-@@ -56 +56 @@
--<span class="bkslt">\t</span>  if (a > 32767)
-+<span class="bkslt">\t</span>  if (a &lt;= 0 || a > 32767)
-@@ -61 +61 @@
--<span class="bkslt">\t</span>  if (b > 32767)
-+<span class="bkslt">\t</span>  if (b &lt;= 0 || b > 32767)
---- gdk_imlib/io-tiff.c
-+++ gdk_imlib/io-tiff.c
-@@ -39 +39,3 @@
--  if(ww > 32767 || hh > 32767)
-+  if (ww &lt;= 0 || ww > 32767 ||
-+      hh &lt;= 0 || hh > 32767 ||
-+      hh >= (G_MAXINT/sizeof(uint32)) / ww)
---- gdk_imlib/io-xpm.c
-+++ gdk_imlib/io-xpm.c
-@@ -42,0 +43 @@
-+  memset(lookup, 0, sizeof(lookup));
-@@ -44,0 +46,3 @@
-+  if (!line)
-+    return NULL;
-+
-@@ -73 +77 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (ncolors > 32766)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (ncolors &lt;= 0 || ncolors > 32766)
-@@ -79 +83 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (cpp > 5)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (cpp &lt;= 0 || cpp > 5)
-@@ -85 +89 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*w > 32767)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*w &lt;= 0 || *w > 32767)
-@@ -91 +95 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*h > 32767)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  if (*h &lt;= 0 || *h > 32767)
-@@ -122,0 +127 @@
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>      int                 space;
-@@ -127,0 +133 @@
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>      space = sizeof(col) - 1;
-@@ -150,4 +156,4 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (col[0])
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, " ");
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (strlen(col) + strlen(s) &lt; sizeof(col))
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, s);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (col[0] &amp;&amp; space > 0)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strncat(col, " ", space), space -= 1;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (slen &lt;= space)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>strcat(col, s), space -= slen;
-@@ -183 +189,2 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  strcpy(tok, s);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (slen &lt; sizeof(tok))
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcpy(tok, s);
-@@ -184,0 +192 @@
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  space = sizeof(col) - 1;
-@@ -188,3 +196,4 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (col[0])
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcat(col, " ");
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  strcat(col, s);
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (col[0] &amp;&amp; space > 0)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcat(col, " "), space -= 1;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>  if (slen &lt;= space)
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>    strcat(col, s), space -= slen;
---- gdk_imlib/misc.c
-+++ gdk_imlib/misc.c
-@@ -676,0 +677,4 @@
-+
-+  id->x.shm = 0;
-+  id->x.shmp = 0;
-+  id->max_shm = 0;
-@@ -692 +696,2 @@
--<span class="bkslt">\t</span>      if (XShmPixmapFormat(id->x.disp) == ZPixmap)
-+<span class="bkslt">\t</span>      if ((XShmPixmapFormat(id->x.disp) == ZPixmap) &amp;&amp;
-+<span class="bkslt">\t</span><span class="bkslt">\t</span>  (pm == True))
-@@ -697 +701,0 @@
--  else
-@@ -699,4 +703 @@
--    {
--      id->x.shm = 0;
--      id->x.shmp = 0;
--    }
-+
-@@ -938,2 +939,2 @@
--<span class="bkslt">\t</span>  if (id->x.shm)
--<span class="bkslt">\t</span>    id->x.shmp = p->sharedpixmaps;
-+<span class="bkslt">\t</span>  if (!p->sharedpixmaps)
-+<span class="bkslt">\t</span>    id->x.shmp = 0;
-@@ -1357,0 +1359,2 @@
-+ *<span class="bkslt">\t</span>we check G_MAX_INT/4 because rend.c malloc\'s w * h * bpp
-+ *<span class="bkslt">\t</span>+ 3 is safety margin
-@@ -1362 +1365,3 @@
--<span class="bkslt">\t</span>if( w > 32767 || h > 32767)
-+<span class="bkslt">\t</span>if (w &lt;= 0 || w > 32767 ||
-+<span class="bkslt">\t</span>    h &lt;= 0 || h > 32767 ||
-+<span class="bkslt">\t</span>    h >= (G_MAXINT/4 - 1) / w)
-@@ -1364 +1369 @@
--<span class="bkslt">\t</span>return malloc(w * h * 3);
-+<span class="bkslt">\t</span>return malloc(w * h * 3 + 3);
-@@ -1365,0 +1371 @@
-+
---- gdk_imlib/utils.c
-+++ gdk_imlib/utils.c
-@@ -1238,0 +1239 @@
-+  memset(lookup, 0, sizeof(lookup));
-@@ -1242,0 +1244,15 @@
-+      if (!line)
-+<span class="bkslt">\t</span>break;
-+      line = strdup(line);
-+      if (!line)
-+<span class="bkslt">\t</span>break;
-+      len = strlen(line);
-+      for (i = 0; i < len; ++i)
-+        {
-+<span class="bkslt">\t</span>  c = line[i];
-+<span class="bkslt">\t</span>  if (c < 32)
-+<span class="bkslt">\t</span>    line[i] = 32;
-+<span class="bkslt">\t</span>  else if (c > 127)
-+<span class="bkslt">\t</span>    line[i] = 127;
-+<span class="bkslt">\t</span>}
-+
-@@ -1247 +1263 @@
--<span class="bkslt">\t</span>  if (ncolors > 32766)
-+<span class="bkslt">\t</span>  if (ncolors &lt;= 0 || ncolors > 32766)
-@@ -1250,0 +1267 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1253 +1270 @@
--<span class="bkslt">\t</span>  if (cpp > 5)
-+<span class="bkslt">\t</span>  if (cpp &lt;= 0 || cpp > 5)
-@@ -1256,0 +1274 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1259 +1277 @@
--<span class="bkslt">\t</span>  if (w > 32767)
-+<span class="bkslt">\t</span>  if (w &lt;= 0 || w > 32767)
-@@ -1262,0 +1281 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1265 +1284 @@
--<span class="bkslt">\t</span>  if (h > 32767)
-+<span class="bkslt">\t</span>  if (h &lt;= 0 || h > 32767)
-@@ -1268,0 +1288 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1275,0 +1296 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1284,0 +1306 @@
-+<span class="bkslt">\t</span>      free(line);
-@@ -1358 +1380 @@
--<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (colptr + ls &lt;= sizeof(col))
-+<span class="bkslt">\t</span><span class="bkslt">\t</span><span class="bkslt">\t</span>      if (colptr + ls &lt; sizeof(col))
-@@ -1560,0 +1583 @@
-+      free(line);
-' | patch -p0
-</code>
-<code class="thtwo">ltoolupdate_fn
 
 chown_fn
 
 cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
+PRFX=/usr
 CFLAGS="$SLKCFLAGS" \
+CC=$COMPILER \
 ../configure \
-  --prefix=/usr \
-  --libdir=/usr/lib$LIBDIRSUFFIX \
+  --prefix=$PRFX \
+  --libdir=$PRFX/lib$LIBDIRSUFFIX \
+  --enable-doc-build \
   --disable-static \
   --host=$HOST
 
@@ -3106,12 +2649,11 @@ makepkg_fn
 <span class="dastx">##</span> only need to install to $SYSROOT for the tdegraphics build
 <span class="dastx">##</span> installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
 ROOT=$SYSROOT installpkg $OUTPUT/$PRGNAM-$VERSION-$ARM-$BUILD.txz
-
 </code></code>
-<span class="tabs"><a href="#close_imlib">close</a></span>
+<span class="tabs"><a href="#close_imlib2">close</a></span>
 </div>
 <br></div>
-<!-- imlib - end -->
+<!-- imlib2 - end -->
 
 
 <p>
@@ -3202,8 +2744,8 @@ untar_fn
 <code class="thtwo">cd_builddir_fn
 
 <span class="dastx">##</span> rm -rf $TMP/tmp-$PRGNAM/$PRGNAM*/build-$PRGNAM/*
-<span class="dastx">##</span> If imlib is installed, include kuickshow:
-[[ $(ls $SYSROOT/usr/lib$LIBDIRSUFFIX/libImlib.so.*) ]] &amp;&amp; KUICKSHOW=ON
+<span class="dastx">##</span> If imlib2 is installed, include kuickshow:
+[[ $(ls $SYSROOT/usr/lib$LIBDIRSUFFIX/libImlib2.so.*) ]] &amp;&amp; KUICKSHOW=ON
 cmake-toolchain_fn
 cmake \
     -D CMAKE_TOOLCHAIN_FILE=./cmake-toolchain.cmake \
@@ -3995,7 +3537,7 @@ git checkout gh-pages
         <p><a href="#tdeaddons">&hellip; tdeaddons</a>
         <p><a href="#tdeutils">&hellip; tdeutils</a>
         <p><a href="#tdeartwork">&hellip; tdeartwork</a>
-        <p><a href="#imlib">&hellip; <span style="background: #FFD7F7;">imlib</span></a>
+        <p><a href="#imlib2">&hellip; <span style="background: #FFD7F7;">imlib2</span></a>
         <p><a href="#tdegraph">&hellip; tdegraphics</a>
         <p><a href="#tdeadmin">&hellip; tdeadmin</a>
         <p><a href="#tdmtheme">&hellip; tdmtheme</a>
