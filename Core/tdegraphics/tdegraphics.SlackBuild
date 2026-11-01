@@ -33,26 +33,6 @@ getsource_fn
 
 untar_fn
 
-#Fix build with Poppler 26.06 and later
-pkg-config --atleast-version=26.06 poppler && {
-[[ $TDEVERSION == 14.1.6 ]] && {
-patch -p0 << EOF
---- tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-page.cpp
-@@ -146,1 +146,5 @@
-+#if (POPPLER_VERSION_C >= 26006000)
-+    rect = &p->getCropBox();
-+#else
-     rect = p->getCropBox();
-+#endif
---- tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
-+++ tdefile-plugins/dependencies/poppler-tqt/poppler-private.h
-@@ -32,0 +32,1 @@
-+#include <CharTypes.h>
-EOF
-}
-}
-
 ## build fails with gcc visibility support
 sed -i 's|tde_setup_gcc_visibility|#&|' ConfigureChecks.cmake
 
@@ -145,8 +125,8 @@ cd_builddir_fn
 ## change the bug reporting URL
 sed -i "s|http://bugs.trinitydesktop.org|https://mirror.git.trinitydesktop.org/gitea/TDE/$PRGNAM/issues|" ../doc/man/*/*.1
 
-# If imlib is installed, include Kuickshow:
-pkg-config imlib && KUICKSHOW=ON
+# If imlib2 is installed, include Kuickshow:
+pkg-config imlib2 && KUICKSHOW=ON
 
 [[ $TDEVERSION != 14.2.0 ]] && BUILD_KMRML=-DBUILD_KMRML="ON"
 cmake ${G_NINJA:-} -C $TMPVARS/CMAKE_CACHE ${CMAKE_OPTS:-} \
@@ -189,7 +169,8 @@ mkdir_install_fn
 doinst_sh_fn
 
 ## KMRML removed from 14.2.0
-[[ $TDEVERSION != 14.2.0 ]] && kmrml=\\n$PRGNAM': * kmrml: Connects to a MRML server and find similar images'
+[[ $TDEVERSION != 14.2.0 ]] && Kmrml=\\n$PRGNAM': * kmrml: Connects to a MRML server and find similar images'
+[[ $KUICKSHOW ]] && Kuickshow=\\n$PRGNAM': * kuickshow: Imageviewer.'
 echo -e "
 # HOW TO EDIT THIS FILE:
 # The 'handy ruler' below makes it easier to edit a package description.  Line
@@ -207,7 +188,7 @@ $PRGNAM: * kdvi: Program (and embeddable KPart) to display *.DVI files from TeX
 $PRGNAM: * kfax: Display raw and tiffed fax images (g3, g3-2d, g4).
 $PRGNAM: * kfaxview: An embeddable KPart to display tiffed fax images.
 $PRGNAM: * kgamma: set monitor gamma
-$PRGNAM: * kghostview: Program (and embeddable KPart) to display *.pdf and *.ps${kmrml:-}
+$PRGNAM: * kghostview: Program (and embeddable KPart) to display *.pdf and *.ps${Kmrml:-}
 $PRGNAM: * kolourpaint: An easy-to-use paint program designed for drawing
 $PRGNAM:                simple diagrams/logos/icons and editing screenshots.
 $PRGNAM: * kooka: A raster image scan program, based on SANE and libkscan.
@@ -215,8 +196,7 @@ $PRGNAM: * kpdf: a TDE pdf viewer
 $PRGNAM: * kpovmodeler: Enter scenes for the 3D rendering engine PovRay.
 $PRGNAM: * kruler: An on-screen ruler in inch, centimeter and pixel
 $PRGNAM: * ksnapshot: Capture image of screen
-$PRGNAM: * ksvg: a TDE implementation of Scalable Vector Graphics
-$PRGNAM: * kuickshow: Imageviewer.
+$PRGNAM: * ksvg: a TDE implementation of Scalable Vector Graphics${Kuickshow:-}
 $PRGNAM: * kview: Picture viewer - standalone program and embeddable KPart.
 $PRGNAM: * kviewshell: Generic framework for viewer applications.
 $PRGNAM: * libkscan: Library to access scanners used by kooka (and koffice)

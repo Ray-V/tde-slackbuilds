@@ -101,7 +101,7 @@ Set the version of TDE to be built.
  
 " \
 13 75 3 \
-"14.1.6" "the R14.1.6 release - source from archives" \
+"14.1.7" "the R14.1.7 release - source from archives" \
 "14.1.x" "next release preview - source from Trinity git" \
 "14.2.0" "R14.2.0 development - source from Trinity git" \
 2> $TMPVARS/TDEVERSION
@@ -350,7 +350,7 @@ ${app_1:-} ${about_1:-} ${status_1:-} ${comment_1:-} \
 " Misc/graphviz" "Graph Visualization" off "\Zb\Z6 Runtime option for kscope. Build-time option for tdeedu. \Zn" \
 "Core/tdeedu" "Educational software" off "\Zb\Z6 Build-time option -> dot [graphviz] \Zn" \
 "Core/tdegames" "Games for TDE - atlantik, kasteroids, katomic, etc." off "\Zb\Z6   \Zn" \
-" Misc/imlib" "An image loading and rendering library" off "\Zb\Z6 Build-time option for tdegraphics - needed for kuickshow \Zn" \
+" Misc/imlib2" "An image loading and rendering library" off "\Zb\Z6 Build-time option for kuickshow [tdegraphics], required for kompose \Zn" \
 "Core/tdegraphics" "Misc graphics apps" off "\Zb\Z6   \Zn" \
 "Core/tdenetwork" "Networking applications for TDE" off "\Zb\Z6 Optional build-time dependency -> speex \Zn" \
 "Deps/libcaldav" "Calendaring Extensions to WebDAV" off "\Zb\Z6 Optional dependency for korganizer [tdepim] \Zn" \
@@ -400,7 +400,6 @@ ${app_1:-} ${about_1:-} ${status_1:-} ${comment_1:-} \
 " Misc/GraphicsMagick" "Swiss army knife of image processing" off "\Zb\Z6 Buildtime option for chalk[krita] in koffice, and inkscape \Zn" \
 "Apps/koffice" "Office Suite" off "\Zb\Z6 Optional build-time dependency - GraphicsMagick \Zn" \
 "Apps/koffice-i18n" "Internationalization files for koffice" off "\Zb\Z6 Provides \Zb\Z3Additional language support\Zb\Z6 for koffice \Zn" \
-" Misc/imlib2" "An image loading and rendering library" off "\Zb\Z6 Build-time requirement for kompose \Zn" \
 "Apps/kompose" "Full-screen window/desktop manager" off "\Zb\Z6 Imlib2 is a build time requirement \Zn" \
 "Apps/kplayer" "Multimedia player with MPlayer backend" off "\Zb\Z6 MPlayer is a run time requirement \Zn" \
 "Apps/krename" "Batch renaming files, with KFilePlugins support" off "\Zb\Z6   \Zn" \
@@ -763,8 +762,8 @@ Create and/or update the git repositories local copies.
 
 
 #rm -f $TMPVARS/PRE_DOWNLOAD  ## this is done at the head of this script
-[[ $(cat $TMPVARS/TDEVERSION) == 14.1.6 ]] && PRE_DOWNLOAD_MESSAGE="Only the source archives not already in 'src' will be downloaded." || PRE_DOWNLOAD_MESSAGE="All cgit sources for the build list packages will be cloned/updated.\nMisc archives will only be downloaded if not already in 'src'."
-## testing for cgit!=no will allow =yes, or null, which is the 14.1.6 build case
+[[ $(cat $TMPVARS/TDEVERSION) == 14.1.7 ]] && PRE_DOWNLOAD_MESSAGE="Only the source archives not already in 'src' will be downloaded." || PRE_DOWNLOAD_MESSAGE="All cgit sources for the build list packages will be cloned/updated.\nMisc archives will only be downloaded if not already in 'src'."
+## testing for cgit!=no will allow =yes, or null, which is the 14.1.7 build case
 [[ $(cat $TMPVARS/DL_CGIT) != no ]] &&  {
 dialog --cr-wrap --no-shadow --colors --defaultno --title " Only download sources " --yesno \
 "

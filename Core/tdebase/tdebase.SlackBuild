@@ -35,28 +35,6 @@ getsource_fn
 
 untar_fn
 
-## patch for building with gcc-16 [c++20 default] - issue #735
-[[ $TDEVERSION == 14.1.6 ]] && {
-patch -p0 << EOF
---- kcontrol/joystick/joydevice.h
-+++ kcontrol/joystick/joydevice.h
-@@ -27,3 +27,1 @@
--#undef __STRICT_ANSI__
- #include <linux/joystick.h>
--#define __STRICT_ANSI__
---- libkonq/konq_sort_constants.h
-+++ libkonq/konq_sort_constants.h
-@@ -7,5 +7,5 @@
--enum {
-+enum TextSortOrders {
-   UNICODE_UNMODIFIED      = 0,
-   LOCALE_UNMODIFIED       = 1,
-   UNICODE_CASEINSENSITIVE = 2,
--} TextSortOrders;
-+};
-EOF
-}
-
 ## make default tdm screen text clearer against dark background and align login button with clickable area
 ## edit color="#ffff74" and/or color="#ff0000" for your own choice
 echo $'
@@ -152,7 +130,6 @@ sed -i 's|HINTS|&\n      /var/www/cgi-bin|' khelpcenter/searchhandlers/CMakeList
 ## correct test for sudo
 sed -i 's|^if( TDESU_BACKEND-NOTFOUND )|if( ${TDESU_BACKEND} STREQUAL "TDESU_BACKEND-NOTFOUND" )|' tdesu/CMakeLists.txt
 sed -i 's|endif( TDESU_BACKEND-NOTFOUND )|endif()|' tdesu/CMakeLists.txt
-sed -i 's|"sudo su"|sudo|' konsole/other/CMakeLists.txt
 
 listdocs_fn
 

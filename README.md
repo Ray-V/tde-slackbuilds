@@ -6,7 +6,7 @@
 .. for Slackware [x86_64/i586+/arm], and [Slarm64](https://slackware.uk/slarm64/) [aarch64].  
 See [*Cross compiling for RPi3*](#xcompiling) for building for arm_hf and aarch64.
 
-For a native build, run **./BUILD-TDE.sh** - a dialog based script with a series of screens for user input which will build the release version 14.1.6 or the development versions 14.1.x/14.2.0.
+For a native build, run **./BUILD-TDE.sh** - a dialog based script with a series of screens for user input which will build the release version 14.1.7 or the development versions 14.1.x/14.2.0.
 
 [<img src="https://ray-v.github.io/TDE-version.png">](https://ray-v.github.io/TDE-version.png "TDE version")  
 ... select TDE version
@@ -18,7 +18,7 @@ Information about dependencies for some packages has been added at the bottom of
 
 Only building the packages is a global option. It therefore can't be used where the build list includes packages which will need to be installed as dependencies for other packages in the build list [for example tdesdk needs tdepim to be installed].
 
-14.1.6 source archives will be downloaded from a geoIP located mirror site, or the development sources 14.1.x/14.2.0 cloned or updated from trinitydesktop gitea.  
+14.1.7 source archives will be downloaded from a geoIP located mirror site, or the development sources 14.1.x/14.2.0 cloned or updated from trinitydesktop gitea.  
 Downloading can be done pre-build [useful for an off-line build], or during the build.
 
 If you're curious about what this might involve, [take a look at a sample build set up](https://ray-v.github.io/A_typical_TDE_SlackBuild.html).
@@ -78,7 +78,7 @@ Deps/libart-lgpl
 Core/tdelibs
 Core/tdebase
 ```
-The cmake-trinity package is downloaded with the first archive, usually tqt.  
+The tde-cmake-trinity package is downloaded with the first archive, usually tqt.  
 [§] Removed for 14.2.0
 
 ---
@@ -107,7 +107,7 @@ The git repositories are cloned to 'src/cgit'
 <a id="xcompiling"></a>
 ***Cross compiling for RPi3***
 
-Cross compiling a number of packages for the Raspberry Pi3 based on these scripts is detailed in the html page in the gh-pages branch:
+Cross compiling a number of packages for the Raspberry Pi3/4 based on these scripts is detailed in the html page in the gh-pages branch:
 ```
 git clone https://github.com/Ray-V/tde-slackbuilds.git  
 cd tde-slackbuilds  

@@ -33,44 +33,41 @@ getsource_fn
 
 untar_fn
 
-# set support for additional language(s) as per I18N variable
-# but only for languages available with this package
-langs="" # for additional locales
-langdoc="kipi-plugins" # for html docs
-ldocs="" # for slack-desc
-for Lang in $I18N
-do [[ -d po/$Lang ]] && langs="$langs $Lang" && \
-[[ -d doc/$Lang"_kipi-plugins" ]] && {
-langdoc=$(echo $Lang"_kipi-plugins" $langdoc)
-ldocs="$ldocs $Lang"
-}
-done
-sed -i "s|SUBDIRS =.*$|SUBDIRS =$langs|" po/Makefile.am
-sed -i "s|SUBDIRS =.*$|SUBDIRS =$langdoc|" doc/Makefile.am
-
-## fix check for visibility support - tde-common-admin pull #20
-sed -i 's| Q_EXPORT| TQ_EXPORT|' admin/acinclude.m4.in
+## for slack-desc
+langs="";for Lang in $I18N;do [[ -d po/$Lang ]] && langs="$langs $Lang";done
+ldocs="";for Lang in $I18N;do [[ -d doc/$Lang ]] && ldocs="$ldocs $Lang";done
 
 listdocs_fn
-
-ltoolupdate_fn
 
 chown_fn
 
 cd_builddir_fn
 
-[[ $GCC_VIS == ON ]] && EN_GCC_VIS="--enable-gcc-hidden-visibility"
-
-CFLAGS="$SLKRCFLAGS" \
-CXXFLAGS="$SLKRCFLAGS" \
-CC=$COMPILER \
-CXX=$COMPILER_CXX \
-../configure \
-   --prefix=$INSTALL_TDE \
-   --mandir=$INSTALL_TDE/man \
-   ${EN_GCC_VIS:-} \
-   --disable-rpath \
-   --enable-closure
+cmake ${G_NINJA:-} -C $TMPVARS/CMAKE_CACHE ${CMAKE_OPTS:-} \
+    -DBUILD_ACQUIREIMAGES="ON" \
+    -DBUILD_BATCHPROCESSIMAGES="ON" \
+    -DBUILD_CALENDAR="ON" \
+    -DBUILD_CDARCHIVING="ON" \
+    -DBUILD_FINDIMAGES="ON" \
+    -DBUILD_FLICKREXPORT="ON" \
+    -DBUILD_GALLERYEXPORT="ON" \
+    -DBUILD_GPSSYNC="ON" \
+    -DBUILD_HTMLEXPORT="ON" \
+    -DBUILD_IMAGEVIEWER="ON" \
+    -DBUILD_IPODEXPORT="OFF" \
+    -DBUILD_JPEGLOSSLESS="ON" \
+    -DBUILD_KAMERAKLIENT="ON" \
+    -DBUILD_METADATAEDIT="ON" \
+    -DBUILD_MPEGENCODER="ON" \
+    -DBUILD_PICASAWEBEXPORT="ON" \
+    -DBUILD_PRINTWIZARD="ON" \
+    -DBUILD_RAWCONVERTER="ON" \
+    -DBUILD_SENDIMAGES="ON" \
+    -DBUILD_SIMPLEVIEWEREXPORT="ON" \
+    -DBUILD_SLIDESHOW="ON" \
+    -DBUILD_SYNC="ON" \
+    -DBUILD_TIMEADJUST="ON" \
+    -DBUILD_WALLPAPER="ON"
 
 make_fn
 

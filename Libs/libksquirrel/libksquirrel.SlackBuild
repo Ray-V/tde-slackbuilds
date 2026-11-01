@@ -44,7 +44,7 @@ chown_fn
 sed -i '7,12d' doc/CMakeLists.txt
 
 ## These tests are for codecs that don't have native Slackware support
-## and are therefore turned on only if the required dependencies are found
+## The codec builds are therefore turned on only if the required dependencies are found
 [[ $(which medcon) ]] 2>/dev/null && DICOM=ON || echo " ## the dicom codec won't be built because medcon not found";echo
 [[ $(which vec2web) ]] 2>/dev/null && DXF=ON || echo " ## the dxf codec won't be built because vec2web not found";echo
 
